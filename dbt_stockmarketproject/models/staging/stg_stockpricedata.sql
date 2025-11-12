@@ -1,3 +1,8 @@
+{{ config(
+    materialized = 'table',
+    post_hook = ["ALTER TABLE {{ this }} ADD CONSTRAINT pk_stockpricedata PRIMARY KEY (stock_ticker, trading_date)"]
+) }}
+
 with stockdata as (
     select
         TICKER as stock_ticker, 
