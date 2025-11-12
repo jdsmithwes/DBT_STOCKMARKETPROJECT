@@ -1,0 +1,366 @@
+==================== 2025-11-05 23:57:09.220085 | 019a5673-ece3-7e92-8925-0fbbc2e48788 ====================
+Installing dbt project and profile setup
+23:57:09.224291 [info ]: [32m[1mInfo[0m Created .vscode/extensions.json with dbt extension recommendation
+23:57:09.224338 [info ]: [32m[1mSuccess[0m Project created successfully!
+23:57:09.224350 [info ]: [32m[1mInfo[0m Project name: jaffle_shop
+23:57:09.224358 [info ]: [32m[1mInfo[0m Project directory: jaffle_shop
+23:57:09.224367 [info ]: [32m[1mInfo[0m Setting up your profile...
+23:57:09.224773 [info ]: Profile '[33mjaffle_shop[0m' already exists. You can choose how to proceed.
+23:57:33.255234 [info ]: [32m[1mInfo[0m Editing existing profile...
+23:57:34.308463 [info ]: Editing existing profile - skipping cloud config fetch
+23:59:53.053018 [info ]: [32m[1mInfo[0m Backup created at /Users/jamaalsmith/.dbt/profiles.yml.bkp
+23:59:53.053267 [info ]: [32m[1mSuccess[0m Profile written to /Users/jamaalsmith/.dbt/profiles.yml
+Validating profile inputs, adapters, and connection
+
+dbt-fusion 2.0.0-preview.60
+   Loading ~/.dbt/profiles.yml
+ Debugging profile: dev
+ Debugging dbt version: 2.0.0-preview.60
+ Debugging platform: macos aarch64 (unix)
+ Debugging adapter type: snowflake (remote)
+ Debugging dependencies:
+  git: OK
+ Debugging connection:
+  "account": "TPRFGUJ-JNC76647",
+  "user": "jdsmithwes",
+  "database": "stock_data_2",
+  "warehouse": "dbt_stockproject",
+  "schema": "stock_trade_data",
+  "role": "accountadmin"
+23:59:54.242626 [error]: dbt1011: [Snowflake] 390100 (08004): Incorrect username or password was specified.
+23:59:54.645020 [info ]: 
+==================== Execution Summary =====================
+Finished 'init' with 1 error for target 'dev' [2m 45s]
+==================== 2025-11-06 00:00:13.168650 | 019a5676-bb6f-7b10-9d23-92df70a80f54 ====================
+Installing dbt project and profile setup
+00:00:13.169300 [info ]: [33m[1mWarning[0m Directory '[33mjaffle_shop[0m' already exists, using '[33m[33m[1mjaffle_shop_1[0m[0m' instead
+00:00:13.173271 [info ]: [32m[1mInfo[0m Created .vscode/extensions.json with dbt extension recommendation
+00:00:13.173315 [info ]: [32m[1mSuccess[0m Project created successfully!
+00:00:13.173327 [info ]: [32m[1mInfo[0m Project name: jaffle_shop_1
+00:00:13.173335 [info ]: [32m[1mInfo[0m Project directory: jaffle_shop_1
+00:00:13.173345 [info ]: [32m[1mInfo[0m Setting up your profile...
+00:00:13.173779 [info ]: Profile '[33mjaffle_shop_1[0m' already exists. You can choose how to proceed.
+00:00:20.026578 [info ]: [32m[1mInfo[0m Editing existing profile...
+00:00:20.941456 [info ]: Editing existing profile - skipping cloud config fetch
+00:00:43.818180 [info ]: [32m[1mInfo[0m Backup created at /Users/jamaalsmith/.dbt/profiles.yml.bkp
+00:00:43.819039 [info ]: [32m[1mSuccess[0m Profile written to /Users/jamaalsmith/.dbt/profiles.yml
+Validating profile inputs, adapters, and connection
+
+dbt-fusion 2.0.0-preview.60
+   Loading ~/.dbt/profiles.yml
+ Debugging profile: dev
+ Debugging dbt version: 2.0.0-preview.60
+ Debugging platform: macos aarch64 (unix)
+ Debugging adapter type: snowflake (remote)
+ Debugging dependencies:
+  git: OK
+ Debugging connection:
+  "account": "TPRFGUJ-JNC76647",
+  "user": "jdsmithwes",
+  "database": "stock_data_3",
+  "warehouse": "dbt_stockproject",
+  "schema": "stock_trade_data_2",
+  "role": "accountadmin"
+00:00:44.806993 [error]: dbt1011: [Snowflake] 390100 (08004): Incorrect username or password was specified.
+00:00:45.041691 [info ]: 
+==================== Execution Summary =====================
+Finished 'init' with 1 error for target 'dev' [31.9s]
+==================== 2025-11-06 00:11:55.759836 | 019a5681-73ef-7702-9a65-007b40c87ce4 ====================
+Installing dbt project and profile setup
+00:11:55.760588 [info ]: [33m[1mWarning[0m Directory '[33mjaffle_shop[0m' already exists, using '[33m[33m[1mjaffle_shop_2[0m[0m' instead
+00:11:55.763051 [info ]: [32m[1mInfo[0m Created .vscode/extensions.json with dbt extension recommendation
+00:11:55.763072 [info ]: [32m[1mSuccess[0m Project created successfully!
+00:11:55.763079 [info ]: [32m[1mInfo[0m Project name: jaffle_shop_2
+00:11:55.763084 [info ]: [32m[1mInfo[0m Project directory: jaffle_shop_2
+00:11:55.763090 [info ]: [32m[1mInfo[0m Setting up your profile...
+00:11:55.763550 [info ]: [32m[1mInfo[0m Creating new profile...
+00:11:56.871038 [info ]: Found dbt_cloud.yml configuration
+00:11:56.871068 [info ]: Found active project: JdsmithFirstProject (ID: 70471823521042)
+00:12:02.224299 [warn ]: dbt1001: Failed to fetch cloud config: Failed to fetch user credentials: error in response: status code 404 Not Found
+00:12:02.224415 [info ]: No cloud config found for this adapter/project
+00:14:06.023700 [info ]: [32m[1mSuccess[0m Profile written to /Users/jamaalsmith/.dbt/profiles.yml
+Validating profile inputs, adapters, and connection
+
+dbt-fusion 2.0.0-preview.60
+   Loading ~/.dbt/profiles.yml
+ Debugging profile: dev
+ Debugging dbt version: 2.0.0-preview.60
+ Debugging platform: macos aarch64 (unix)
+ Debugging adapter type: snowflake (remote)
+ Debugging dependencies:
+  git: OK
+ Debugging connection:
+  "account": "TPRFGUJ-JNC76647",
+  "user": "jdsmithws",
+  "database": "stock_data",
+  "warehouse": "dbt_stockproject",
+  "schema": "stock_trade_data",
+  "role": "accountadmin"
+00:14:06.738291 [error]: dbt1011: [Snowflake] 390100 (08004): Incorrect username or password was specified.
+00:14:07.083890 [info ]: 
+==================== Execution Summary =====================
+Finished 'init' with 1 warning and 1 error for target 'dev' [2m 11s]
+==================== 2025-11-06 00:14:25.152873 | 019a5683-bb80-7ff3-9101-327d82eccbb9 ====================
+Installing dbt project and profile setup
+00:14:25.153556 [info ]: [33m[1mWarning[0m Directory '[33mjaffle_shop[0m' already exists, using '[33m[33m[1mjaffle_shop_3[0m[0m' instead
+00:14:25.156760 [info ]: [32m[1mInfo[0m Created .vscode/extensions.json with dbt extension recommendation
+00:14:25.156807 [info ]: [32m[1mSuccess[0m Project created successfully!
+00:14:25.156832 [info ]: [32m[1mInfo[0m Project name: jaffle_shop_3
+00:14:25.156842 [info ]: [32m[1mInfo[0m Project directory: jaffle_shop_3
+00:14:25.156852 [info ]: [32m[1mInfo[0m Setting up your profile...
+00:14:25.157178 [info ]: [32m[1mInfo[0m Creating new profile...
+00:14:28.774318 [info ]: Found dbt_cloud.yml configuration
+00:14:28.774370 [info ]: Found active project: JdsmithFirstProject (ID: 70471823521042)
+00:14:35.544526 [warn ]: dbt1001: Failed to fetch cloud config: Failed to fetch user credentials: error in response: status code 404 Not Found
+00:14:35.544576 [info ]: No cloud config found for this adapter/project
+00:15:39.400048 [info ]: [32m[1mSuccess[0m Profile written to /Users/jamaalsmith/.dbt/profiles.yml
+Validating profile inputs, adapters, and connection
+
+dbt-fusion 2.0.0-preview.60
+   Loading ~/.dbt/profiles.yml
+ Debugging profile: dev
+ Debugging dbt version: 2.0.0-preview.60
+ Debugging platform: macos aarch64 (unix)
+ Debugging adapter type: snowflake (remote)
+ Debugging dependencies:
+  git: OK
+ Debugging connection:
+  "account": "jnc76647",
+  "user": "jdsmithwes",
+  "database": "stock_data",
+  "warehouse": "dbt_stockproject",
+  "schema": "stock_trade_data"
+00:15:40.067295 [error]: dbt1011: [Snowflake] 261004 (08004): failed to auth for unknown reason. HTTP: 404, URL: https://jnc76647.snowflakecomputing.com:443/session/v1/login-request?databaseName=stock_data&requestId=c5da8a66-6916-4781-4dde-40a61a2080b0&request_guid=52e15d57-20d7-429e-531f-9a22c2c8101d&schemaName=stock_trade_data&warehouse=dbt_stockproject
+00:15:40.524426 [info ]: 
+==================== Execution Summary =====================
+Finished 'init' with 1 warning and 1 error for target 'dev' [1m 15s]
+==================== 2025-11-06 00:19:25.479849 | 019a5688-50a6-7cb3-8038-2aaaa53bfa37 ====================
+Installing dbt project and profile setup
+00:19:25.480529 [info ]: [33m[1mWarning[0m Directory '[33mjaffle_shop[0m' already exists, using '[33m[33m[1mjaffle_shop_4[0m[0m' instead
+00:19:25.483926 [info ]: [32m[1mInfo[0m Created .vscode/extensions.json with dbt extension recommendation
+00:19:25.483963 [info ]: [32m[1mSuccess[0m Project created successfully!
+00:19:25.483973 [info ]: [32m[1mInfo[0m Project name: jaffle_shop_4
+00:19:25.483980 [info ]: [32m[1mInfo[0m Project directory: jaffle_shop_4
+00:19:25.483991 [info ]: [32m[1mInfo[0m Setting up your profile...
+00:19:25.484304 [info ]: [32m[1mInfo[0m Creating new profile...
+00:19:26.445425 [info ]: Found dbt_cloud.yml configuration
+00:19:26.445474 [info ]: Found active project: JdsmithFirstProject (ID: 70471823521042)
+00:19:34.261533 [warn ]: dbt1001: Failed to fetch cloud config: Failed to fetch user credentials: error in response: status code 404 Not Found
+00:19:34.261582 [info ]: No cloud config found for this adapter/project
+00:21:35.489832 [info ]: [32m[1mSuccess[0m Profile written to /Users/jamaalsmith/.dbt/profiles.yml
+Validating profile inputs, adapters, and connection
+
+dbt-fusion 2.0.0-preview.60
+   Loading ~/.dbt/profiles.yml
+ Debugging profile: dev
+ Debugging dbt version: 2.0.0-preview.60
+ Debugging platform: macos aarch64 (unix)
+ Debugging adapter type: snowflake (remote)
+ Debugging dependencies:
+  git: OK
+ Debugging connection:
+  "account": "70471823505937",
+  "user": "54f45caa-0b7e-4495-8e06-b61ea94d5383",
+  "database": "stock_data_2",
+  "warehouse": "dbt_stockproject",
+  "schema": "stock_trade_data"
+00:21:36.048615 [error]: dbt1011: [Snowflake] 261004 (08004): failed to auth for unknown reason. HTTP: 404, URL: https://70471823505937.snowflakecomputing.com:443/session/v1/login-request?databaseName=stock_data_2&requestId=d7679fef-2fe3-4fcc-4242-b44e5ef94402&request_guid=0c1ec0e6-4686-48ef-5ee7-3e18438e9842&schemaName=stock_trade_data&warehouse=dbt_stockproject
+00:21:36.482569 [info ]: 
+==================== Execution Summary =====================
+Finished 'init' with 1 warning and 1 error for target 'dev' [2m 11s]
+==================== 2025-11-06 00:21:47.174741 | 019a568a-7a25-76d2-b04a-f089e457fc19 ====================
+Installing dbt project and profile setup
+00:21:47.175445 [info ]: [33m[1mWarning[0m Directory '[33mjaffle_shop[0m' already exists, using '[33m[33m[1mjaffle_shop_5[0m[0m' instead
+00:21:47.179226 [info ]: [32m[1mInfo[0m Created .vscode/extensions.json with dbt extension recommendation
+00:21:47.179264 [info ]: [32m[1mSuccess[0m Project created successfully!
+00:21:47.179276 [info ]: [32m[1mInfo[0m Project name: jaffle_shop_5
+00:21:47.179284 [info ]: [32m[1mInfo[0m Project directory: jaffle_shop_5
+00:21:47.179294 [info ]: [32m[1mInfo[0m Setting up your profile...
+00:21:47.179618 [info ]: [32m[1mInfo[0m Creating new profile...
+00:21:48.535094 [info ]: Found dbt_cloud.yml configuration
+00:21:48.535154 [info ]: Found active project: JdsmithFirstProject (ID: 70471823521042)
+00:21:55.153796 [warn ]: dbt1001: Failed to fetch cloud config: Failed to fetch user credentials: error in response: status code 404 Not Found
+00:21:55.153841 [info ]: No cloud config found for this adapter/project
+==================== 2025-11-06 00:24:54.359174 | 019a568d-5556-7323-b815-36c741ff54a2 ====================
+Installing dbt project and profile setup
+00:24:54.359510 [info ]: [33m[1mWarning[0m Directory '[33mjaffle_shop[0m' already exists, using '[33m[33m[1mjaffle_shop_6[0m[0m' instead
+00:24:54.363349 [info ]: [32m[1mInfo[0m Created .vscode/extensions.json with dbt extension recommendation
+00:24:54.363378 [info ]: [32m[1mSuccess[0m Project created successfully!
+00:24:54.363389 [info ]: [32m[1mInfo[0m Project name: jaffle_shop_6
+00:24:54.363397 [info ]: [32m[1mInfo[0m Project directory: jaffle_shop_6
+00:24:54.363408 [info ]: [32m[1mInfo[0m Setting up your profile...
+00:24:54.363850 [info ]: [32m[1mInfo[0m Creating new profile...
+00:24:57.657983 [info ]: No dbt_cloud.yml found - proceeding without cloud pre-population
+00:30:58.692898 [info ]: [32m[1mSuccess[0m Profile written to /Users/jamaalsmith/.dbt/profiles.yml
+Validating profile inputs, adapters, and connection
+
+dbt-fusion 2.0.0-preview.60
+   Loading ~/.dbt/profiles.yml
+ Debugging profile: dev
+ Debugging dbt version: 2.0.0-preview.60
+ Debugging platform: macos aarch64 (unix)
+ Debugging adapter type: snowflake (remote)
+ Debugging dependencies:
+  git: OK
+ Debugging connection:
+  "account": "70471823505937",
+  "user": "JDSMITHWES",
+  "database": "stock_data",
+  "warehouse": "dbt_stockpriceproject",
+  "schema": "stock_trade_data"
+00:30:59.288819 [error]: dbt1011: [Snowflake] 261004 (08004): failed to auth for unknown reason. HTTP: 404, URL: https://70471823505937.snowflakecomputing.com:443/session/v1/login-request?databaseName=stock_data&requestId=798b403c-91d4-4cc7-55ef-f8797bf0113a&request_guid=26d410e1-4549-4bc3-7c4a-8bf7511a9d3c&schemaName=stock_trade_data&warehouse=dbt_stockpriceproject
+00:30:59.704177 [info ]: 
+==================== Execution Summary =====================
+Finished 'init' with 1 error for target 'dev' [6m 5s]
+==================== 2025-11-06 00:35:16.452715 | 019a5696-d362-7523-9e85-be2105bab94d ====================
+Installing dbt project and profile setup
+00:35:16.454158 [info ]: [33m[1mWarning[0m Directory '[33mjaffle_shop[0m' already exists, using '[33m[33m[1mjaffle_shop_7[0m[0m' instead
+00:35:16.457239 [info ]: [32m[1mInfo[0m Created .vscode/extensions.json with dbt extension recommendation
+00:35:16.457285 [info ]: [32m[1mSuccess[0m Project created successfully!
+00:35:16.457293 [info ]: [32m[1mInfo[0m Project name: jaffle_shop_7
+00:35:16.457300 [info ]: [32m[1mInfo[0m Project directory: jaffle_shop_7
+00:35:16.457314 [info ]: [32m[1mInfo[0m Setting up your profile...
+00:35:16.457676 [info ]: [32m[1mInfo[0m Creating new profile...
+00:35:40.861327 [info ]: Found dbt_cloud.yml configuration
+00:35:40.861430 [info ]: Found active project: JdsmithFirstProject (ID: 70471823521042)
+00:35:48.679794 [warn ]: dbt1001: Failed to fetch cloud config: Failed to fetch user credentials: error in response: status code 404 Not Found
+00:35:48.679866 [info ]: No cloud config found for this adapter/project
+00:37:16.002174 [info ]: [32m[1mSuccess[0m Profile written to /Users/jamaalsmith/.dbt/profiles.yml
+Validating profile inputs, adapters, and connection
+
+dbt-fusion 2.0.0-preview.60
+   Loading ~/.dbt/profiles.yml
+ Debugging profile: dev
+ Debugging dbt version: 2.0.0-preview.60
+ Debugging platform: macos aarch64 (unix)
+ Debugging adapter type: snowflake (remote)
+ Debugging dependencies:
+  git: OK
+ Debugging connection:
+  "account": "TPRFGUJ-JNC76647",
+  "user": "jdsmithwes",
+  "database": "stock_data",
+  "warehouse": "dbt_stockproject",
+  "schema": "stock_trade_data"
+00:37:17.407100 [debug]: Query executed on node unknown:
+select 1 as id
+ Debugging connection test: OK
+  Debugged All checks passed!
+00:37:18.129924 [info ]: 
+==================== Execution Summary =====================
+Finished 'init' with 1 warning for target 'dev' [2m 2s]
+==================== 2025-11-08 11:28:31.443305 | 019a6339-9cd1-7c20-af81-50d89651694d ====================
+Installing dbt project and profile setup
+11:28:31.452593 [info ]: [32m[1mInfo[0m Created .vscode/extensions.json with dbt extension recommendation
+11:28:31.452888 [info ]: [32m[1mSuccess[0m Project created successfully!
+11:28:31.452913 [info ]: [32m[1mInfo[0m Project name: jaffle_shop
+11:28:31.452921 [info ]: [32m[1mInfo[0m Project directory: jaffle_shop
+11:28:31.452933 [info ]: [32m[1mInfo[0m Setting up your profile...
+11:28:31.454547 [info ]: Profile '[33mjaffle_shop[0m' already exists. You can choose how to proceed.
+11:28:42.717960 [info ]: [32m[1mInfo[0m Creating new profile...
+11:28:43.831101 [info ]: Found dbt_cloud.yml configuration
+11:28:43.831127 [info ]: Found active project: JdsmithFirstProject (ID: 70471823521042)
+11:28:56.955448 [warn ]: dbt1001: Failed to fetch cloud config: Failed to fetch user credentials: error in response: status code 404 Not Found
+11:28:56.955501 [info ]: No cloud config found for this adapter/project
+11:29:55.670929 [info ]: [32m[1mInfo[0m Backup created at /Users/jamaalsmith/.dbt/profiles.yml.bkp
+11:29:55.672099 [info ]: [32m[1mSuccess[0m Profile written to /Users/jamaalsmith/.dbt/profiles.yml
+Validating profile inputs, adapters, and connection
+
+dbt-fusion 2.0.0-preview.60
+   Loading ~/.dbt/profiles.yml
+ Debugging profile: dev
+ Debugging dbt version: 2.0.0-preview.60
+ Debugging platform: macos aarch64 (unix)
+ Debugging adapter type: snowflake (remote)
+ Debugging dependencies:
+  git: OK
+ Debugging connection:
+  "account": "TPRFGUJ-JNC76647",
+  "user": "jdsmithwes",
+  "database": "stock_data",
+  "warehouse": "dbt_stockproject",
+  "schema": "raw",
+  "role": "accountadmin"
+11:29:57.297017 [error]: dbt1011: [Snowflake] 390100 (08004): Incorrect username or password was specified.
+New version available 2.0.0-preview.63 (run `dbt system update`)
+11:29:57.824482 [info ]: 
+==================== Execution Summary =====================
+Finished 'init' with 1 warning and 1 error for target 'dev' [1m 26s]
+==================== 2025-11-08 11:30:20.718046 | 019a633b-47ac-7f00-abe7-2715bea79575 ====================
+Installing dbt project and profile setup
+11:30:20.719505 [info ]: [33m[1mWarning[0m Directory '[33mjaffle_shop[0m' already exists, using '[33m[33m[1mjaffle_shop_1[0m[0m' instead
+11:30:20.723032 [info ]: [32m[1mInfo[0m Created .vscode/extensions.json with dbt extension recommendation
+11:30:20.723072 [info ]: [32m[1mSuccess[0m Project created successfully!
+11:30:20.723081 [info ]: [32m[1mInfo[0m Project name: jaffle_shop_1
+11:30:20.723089 [info ]: [32m[1mInfo[0m Project directory: jaffle_shop_1
+11:30:20.723098 [info ]: [32m[1mInfo[0m Setting up your profile...
+11:30:20.723694 [info ]: Profile '[33mjaffle_shop_1[0m' already exists. You can choose how to proceed.
+11:30:26.569188 [info ]: [32m[1mInfo[0m Editing existing profile...
+11:30:27.472654 [info ]: Editing existing profile - skipping cloud config fetch
+11:31:08.031774 [info ]: [32m[1mInfo[0m Backup created at /Users/jamaalsmith/.dbt/profiles.yml.bkp
+11:31:08.032654 [info ]: [32m[1mSuccess[0m Profile written to /Users/jamaalsmith/.dbt/profiles.yml
+Validating profile inputs, adapters, and connection
+
+dbt-fusion 2.0.0-preview.60
+   Loading ~/.dbt/profiles.yml
+ Debugging profile: dev
+ Debugging dbt version: 2.0.0-preview.60
+ Debugging platform: macos aarch64 (unix)
+ Debugging adapter type: snowflake (remote)
+ Debugging dependencies:
+  git: OK
+ Debugging connection:
+  "account": "TPRFGUJ-JNC76647",
+  "user": "jdsmithwes",
+  "database": "stock_data",
+  "warehouse": "dbt_stockproject",
+  "schema": "raw",
+  "role": "accountadmin"
+11:31:09.077270 [error]: dbt1011: [Snowflake] 390100 (08004): Incorrect username or password was specified.
+New version available 2.0.0-preview.63 (run `dbt system update`)
+11:31:09.363878 [info ]: 
+==================== Execution Summary =====================
+Finished 'init' with 1 error for target 'dev' [48.6s]
+==================== 2025-11-08 11:35:12.889412 | 019a633f-bcf8-75d0-af24-96d3bdac0be1 ====================
+11:35:15.887564 [info ]: 
+==================== Execution Summary =====================
+Finished 'system' successfully [3.0s]
+==================== 2025-11-08 11:35:55.963947 | 019a6340-6539-7041-b92a-85b3a4435ffe ====================
+Installing dbt project and profile setup
+11:35:55.970668 [info ]: [32m[1mInfo[0m Created .vscode/extensions.json with dbt extension recommendation
+11:35:55.970786 [info ]: [32m[1mSuccess[0m Project created successfully!
+11:35:55.970794 [info ]: [32m[1mInfo[0m Project name: jaffle_shop
+11:35:55.970800 [info ]: [32m[1mInfo[0m Project directory: jaffle_shop
+11:35:55.970820 [info ]: [32m[1mInfo[0m Setting up your profile...
+11:35:55.972914 [info ]: Profile '[33mjaffle_shop[0m' already exists. You can choose how to proceed.
+11:36:00.503450 [info ]: [32m[1mInfo[0m Creating new profile...
+11:36:01.328814 [info ]: Found dbt_cloud.yml configuration
+11:36:01.328894 [info ]: Found active project: JdsmithFirstProject (ID: 70471823521042)
+11:36:07.875527 [warn ]: dbt1001: Failed to fetch cloud config: Failed to fetch user credentials: error in response: status code 404 Not Found
+11:36:07.875627 [info ]: No cloud config found for this adapter/project
+11:36:27.904651 [info ]: [32m[1mInfo[0m Backup created at /Users/jamaalsmith/.dbt/profiles.yml.bkp
+11:36:27.905493 [info ]: [32m[1mSuccess[0m Profile written to /Users/jamaalsmith/.dbt/profiles.yml
+11:36:27.905735 [info ]: [32m[1mValidating[0m profile inputs, adapters, and connection
+
+dbt-fusion 2.0.0-preview.63
+   Loading ~/.dbt/profiles.yml
+ Debugging profile: dev
+ Debugging dbt version: 2.0.0-preview.63
+ Debugging platform: macos aarch64 (unix)
+ Debugging adapter type: snowflake (remote)
+ Debugging dependencies:
+  git: OK
+ Debugging connection:
+  "account": "TPRFGUJ-JNC76647",
+  "user": "jdsmithwes",
+  "database": "stock_data",
+  "warehouse": "dbt_stockproject",
+  "schema": "raw",
+  "role": "accountadmin"
+11:36:29.132488 [debug]: Query executed on node unknown:
+select 1 as id
+ Debugging connection test: OK
+  Debugged All checks passed!
+11:36:29.482405 [info ]: 
+==================== Execution Summary =====================
+Finished 'init' with 1 warning for target 'dev' [33.5s]

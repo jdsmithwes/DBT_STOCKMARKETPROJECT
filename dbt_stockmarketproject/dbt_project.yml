@@ -1,0 +1,36 @@
+name: stock_data
+
+profile: stock_data
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+seed-paths: ["seeds"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+seeds:
+  stock_data:
+    +schema: SEEDS
+
+models:
+  stock_data:
+    +database: STOCK_DATA
+    +materialized: table
+    +schema: ""
+
+    raw:
+      +materialized: view
+      +schema: RAW
+
+    staging:
+      +materialized: view
+      +schema: STAGING
+
+    intermediate:
+      +materialized: table
+      +schema: INTERMEDIATE
+
+
+

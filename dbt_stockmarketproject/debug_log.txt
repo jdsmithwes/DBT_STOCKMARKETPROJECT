@@ -1,0 +1,18 @@
+dbt-fusion 2.0.0-preview.63
+   Loading ~/.dbt/profiles.yml
+   Loading packages.yml
+Writing runtime sql for node "model.stock_data.stg_stockoverview"
+    Failed [  2.29s] model INTERMEDIATE_STAGING.stg_stockoverview (table)
+
+=================== Errors and Warnings ====================
+error: dbt1014: Error executing materialization macro 'dbt_snowflake.materialization_table_snowflake' for model model.stock_data.stg_stockoverview: [Snowflake] 001003 (42000): SQL compilation error:
+syntax error line 73 at position 136 unexpected '<EOF>'.
+(in compiled/models/staging/stg_stockoverview.sql:1:14)
+(in dbt_internal_packages/dbt-snowflake/macros/materializations/table.sql:27:11)
+(in dbt_internal_packages/dbt-adapters/macros/etc/statement.sql:14:35)
+  --> compiled/models/staging/stg_stockoverview.sql:1:14
+
+==================== Execution Summary =====================
+Finished 'run' with 1 error for target 'dev' [4.0s]
+Processed: 1 model
+Summary: 1 total | 1 error

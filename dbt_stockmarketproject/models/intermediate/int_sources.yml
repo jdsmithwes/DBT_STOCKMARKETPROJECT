@@ -1,0 +1,11 @@
+version: 2
+sources:
+  - name: stock_data
+    database: STOCK_DATA
+    schema: INTERMEDIATE
+    description: "intermediate data models for stock data"
+    tables:
+      - name: int_stock_stats
+        description: "summary statistics for each stock, including first and last trading date, total trading days, average closing price, and maximum trading volume"
+      - name: int_stock_overview
+        description: "company overview information for each stock, including company name, industry, and sector"

@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: stock_data
+    database: STOCK_DATA
+    schema: RAW
+    description: "security details from Alpha Vantage API"
+    tables:
+      - name: STOCKDATA_RAW
+        description: "daily trading data from subset of US stocks considered most active"
+      - name: COMPANY_OVERVIEW_RAW
+        description: "company overview information for each stock, including company name, industry, and sector"
+      
