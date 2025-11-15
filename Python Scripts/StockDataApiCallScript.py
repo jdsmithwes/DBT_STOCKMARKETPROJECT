@@ -45,7 +45,7 @@ def fetch_sp500_tickers():
     logging.info("🔍 Fetching S&P 500 tickers…")
     df = pd.read_csv("https://datahub.io/core/s-and-p-500-companies/r/constituents.csv")
     tickers = df["Symbol"].str.upper().tolist()
-    logging.info(f"✅ Loaded {len(tickers)} tickers")
+    logging.info(f"📄 Loaded {len(tickers)} tickers")
     return tickers
 
 # ------------------------------------
@@ -120,57 +120,78 @@ API_CALLS_PER_MINUTE = 110
 CALL_DELAY = 60 / API_CALLS_PER_MINUTE  # ~0.54 seconds/request
 
 # ------------------------------------
-# Async driver
+# Async Driver with Progress Display
 # ------------------------------------
 async def fetch_all_full_history(tickers):
     timeout = ClientTimeout(total=60)
     connector = aiohttp.TCPConnector(limit=50)
 
     results = []
-    
+    total = len(tickers)
+
     async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
-        for i, ticker in enumerate(tickers):
-            logging.info(f"⏳ Fetching {ticker} ({i+1}/{len(tickers)})")
+        for i, ticker in enumerate(tickers, start=1):
+
+            logging.info(f"⏳ [{i}/{total}] Fetching {ticker} …")
 
             df = await fetch_full_history(session, ticker)
 
             if df is not None:
                 results.append(df)
+                logging.info(f"✅ [{i}/{total}] Completed {ticker}")
+            else:
+                logging.warning(f"❌ [{i}/{total}] Failed for {ticker}")
 
             await asyncio.sleep(CALL_DELAY)
 
     return results
 
 # ------------------------------------
-# S3 Upload (partitioned by ticker)
+# S3 Upload (partitioned per ticker)
 # ------------------------------------
 def upload_partitioned(df, ticker):
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
 
-    # S3 path: stock_data/ticker=AAPL/
+    # Folder partition: ticker={ticker}
     s3_prefix = f"stock_data/ticker={ticker}/"
 
-    # filename
     filename = f"stock_data_{timestamp}.csv"
     local_path = f"./{filename}"
 
-    # Save local
     df.to_csv(local_path, index=False)
 
-    # Upload
     s3_key = f"{s3_prefix}{filename}"
     s3_client.upload_file(local_path, S3_BUCKET_NAME, s3_key)
 
-    logging.info(f"📤 Uploaded → s3://{S3_BUCKET_NAME}/{s3_key}")
+    logging.info(f"📤 Uploaded {ticker} → s3://{S3_BUCKET_NAME}/{s3_key}")
 
 # ------------------------------------
 # Main Workflow
 # ------------------------------------
 def main():
-    logging.info("🚀 Starting FULL historical partitioned S&P500 load")
+    logging.info("🚀 STARTING FULL S&P 500 HISTORICAL INGEST (Partitioned by Ticker)")
+    logging.info("---------------------------------------------------------------")
 
     tickers = fetch_sp500_tickers()
     all_data = asyncio.run(fetch_all_full_history(tickers))
 
-    if not a
+    if not all_data:
+        logging.warning("⚠️ No data returned from AlphaVantage.")
+        return
+
+    logging.info("📦 Uploading all tickers to S3 as partitioned folders…")
+
+    for df in all_data:
+        ticker = df["ticker"].iloc[0]
+        upload_partitioned(df, ticker)
+
+    logging.info("🎉 INGEST COMPLETE — All ticker files successfully uploaded!")
+    logging.info("---------------------------------------------------------------")
+
+# ------------------------------------
+# Run
+# ------------------------------------
+if __name__ == "__main__":
+    main()
+
 
