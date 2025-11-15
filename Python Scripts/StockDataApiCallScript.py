@@ -2,18 +2,21 @@ import os
 import boto3
 import pandas as pd
 import yfinance as yf
-import requests
+import concurrent.futures
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import requests
 
-# ------------------------------------------------------------------------------
-# AWS CREDS
-# ------------------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# AWS Credentials from Environment Variables
+# ---------------------------------------------------------------------
 aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
 aws_region = os.getenv("AWS_REGION", "us-east-1")
 s3_bucket_name = os.getenv("S3_BUCKET_NAME")
 
+# ---------------------------------------------------------------------
+# Create S3 Client
+# ---------------------------------------------------------------------
 s3_client = boto3.client(
     "s3",
     aws_access_key_id=aws_access_key_id,
@@ -21,121 +24,78 @@ s3_client = boto3.client(
     region_name=aws_region
 )
 
-# Output directory
-local_dir = "./stock_data"
-os.makedirs(local_dir, exist_ok=True)
+# ---------------------------------------------------------------------
+# 1️⃣ Fetch All US Stock Tickers (Reliable Source)
+# ---------------------------------------------------------------------
+TICKER_SOURCE_URL = "https://raw.githubusercontent.com/rreichel3/US-Stock-Symbols/main/all/all_tickers.csv"
 
-# ------------------------------------------------------------------------------
-# 1️⃣ Fetch all NASDAQ + NYSE tickers (using very reliable source)
-# ------------------------------------------------------------------------------
-
-def fetch_us_equity_tickers():
-    """
-    Uses NASDAQ Trader Symbol Directory to get all US equity tickers.
-    """
-    urls = {
-        "nasdaq": "https://ftp.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt",
-        "other": "https://ftp.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt"
-    }
-
-    dfs = []
-    for name, url in urls.items():
-        print(f"📥 Downloading {name} symbols...")
-        df = pd.read_csv(url, sep="|")
-        df = df[df["Symbol"].notnull()]
-        dfs.append(df)
-
-    all_symbols = pd.concat(dfs, ignore_index=True)
-
-    # Remove test symbols
-    exclusions = ["Test", "test", "TEST"]
-    all_symbols = all_symbols[
-        ~all_symbols["Security Name"].str.contains("|".join(exclusions), na=False)
-    ]
-
-    tickers = all_symbols["Symbol"].unique().tolist()
-    print(f"✅ Total US tickers discovered: {len(tickers)}")
-
+def fetch_us_tickers():
+    print("🔍 Fetching US equity tickers from Github (reliable source)...")
+    df = pd.read_csv(TICKER_SOURCE_URL)
+    tickers = df["Symbol"].dropna().unique().tolist()
+    print(f"✅ Found {len(tickers)} tickers")
     return tickers
 
-# ------------------------------------------------------------------------------
-# 2️⃣ Fetch daily price data with retry/backoff and throttling
-# ------------------------------------------------------------------------------
-
-def fetch_ticker_data(ticker, max_retries=3):
-    """
-    Fetches historical daily prices using yfinance with retry logic.
-    """
-    for attempt in range(max_retries):
+# ---------------------------------------------------------------------
+# 2️⃣ Fetch Daily Price Data Using yfinance + Retry Logic
+# ---------------------------------------------------------------------
+def fetch_data_for_ticker(ticker, retries=3):
+    for attempt in range(1, retries + 1):
         try:
-            df = yf.download(ticker, period="1y", interval="1d", progress=False)
-
-            if df.empty:
-                print(f"⚠ No data for {ticker}")
-                return None
-
-            df["ticker"] = ticker
-            return df
-
+            data = yf.download(ticker, period="1y", interval="1d", progress=False)
+            if not data.empty:
+                data["ticker"] = ticker
+                return data
+            return None
         except Exception as e:
-            wait = (attempt + 1) * 2
-            print(f"⚠ Error fetching {ticker}: {e} — retrying in {wait}s")
-            time.sleep(wait)
-
-    print(f"❌ Failed to fetch {ticker} after retries")
+            print(f"⚠️ Error fetching {ticker} (attempt {attempt}): {e}")
+            time.sleep(1 * attempt)  # linear backoff
     return None
 
-# ------------------------------------------------------------------------------
-# 3️⃣ Use ThreadPoolExecutor to run fetches in parallel (10× faster)
-# ------------------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# 3️⃣ Multi-threading for Speed
+# ---------------------------------------------------------------------
+def fetch_all_data(tickers):
+    print("🚀 Fetching stock data using multi-threading...")
 
-def fetch_all_tickers_parallel(tickers, max_workers=20):
-    all_data = []
+    dataframes = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+        futures = {executor.submit(fetch_data_for_ticker, t): t for t in tickers}
 
-    print(f"🚀 Fetching stock data in parallel with {max_workers} workers...")
-
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(fetch_ticker_data, t): t for t in tickers}
-
-        for future in as_completed(futures):
+        for future in concurrent.futures.as_completed(futures):
             ticker = futures[future]
-            result = future.result()
+            df = future.result()
+            if df is not None:
+                print(f"✅ Retrieved {ticker}")
+                dataframes.append(df)
+            else:
+                print(f"⚠️ No data for {ticker}")
 
-            if result is not None:
-                all_data.append(result)
-                print(f"✅ {ticker} fetched")
+    return dataframes
 
-    return all_data
-
-# ------------------------------------------------------------------------------
-# MAIN EXECUTION
-# ------------------------------------------------------------------------------
-
+# ---------------------------------------------------------------------
+# MAIN SCRIPT
+# ---------------------------------------------------------------------
 print("🔍 Fetching all US equity tickers...")
-tickers = fetch_us_equity_tickers()
+tickers = fetch_us_tickers()
 
-# Optional: limit tickers temporarily for testing
-# tickers = tickers[:50]
+print("📊 Gathering historical daily data...")
+all_dfs = fetch_all_data(tickers)
 
-print("\n📈 Starting data fetch...")
-dataframes = fetch_all_tickers_parallel(tickers)
-
-if not dataframes:
-    print("❌ No data retrieved — nothing to upload")
+if not all_dfs:
+    print("❌ No data fetched.")
     exit()
 
-# Combine all data
-combined_df = pd.concat(dataframes)
-combined_df.index.name = "date"
-combined_df.reset_index(inplace=True)
+# Combine into master DataFrame
+combined = pd.concat(all_dfs)
+combined.reset_index(inplace=True)
 
-# Save locally
-combined_path = os.path.join(local_dir, "combined_stock_data.csv")
-combined_df.to_csv(combined_path, index=False)
+# Save to temporary GitHub Actions directory
+output_file = "combined_stock_data.csv"
+combined.to_csv(output_file, index=False)
 
-print(f"\n💾 Saved: {combined_path}")
+print(f"📁 Saved file: {output_file}")
 
 # Upload to S3
-s3_client.upload_file(combined_path, s3_bucket_name, "combined_stock_data.csv")
-
-print(f"🚀 Upload complete: s3://{s3_bucket_name}/combined_stock_data.csv")
+s3_client.upload_file(output_file, s3_bucket_name, "combined_stock_data.csv")
+print(f"🚀 Uploaded to s3://{s3_bucket_name}/combined_stock_data.csv")
