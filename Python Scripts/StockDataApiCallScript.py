@@ -133,15 +133,15 @@ def main():
 
     # 3️⃣ Combine + save to file
     combined = pd.concat(all_frames)
-    output_file = os.path.join(local_dir, "combinedstockdata.csv")
+    output_file = os.path.join(local_dir, "combined_stock_data.csv")
     combined.to_csv(output_file, index=False)
 
     logging.info(f"💾 Saved → {output_file}")
 
     # 4️⃣ Upload to S3
-    s3_client.upload_file(output_file, s3_bucket_name, "combinedstockdata.csv")
+    s3_client.upload_file(output_file, s3_bucket_name, "combined_stock_data.csv")
 
-    logging.info(f"🚀 Uploaded to S3 → s3://{s3_bucket_name}/combinedstockdata.csv")
+    logging.info(f"🚀 Uploaded to S3 → s3://{s3_bucket_name}/combined_stock_data.csv")
     logging.info("🎉 Script complete!")
 
 # ------------------------------------
