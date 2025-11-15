@@ -1,10 +1,11 @@
 import os
-import requests
+import asyncio
+import aiohttp
 import pandas as pd
 import boto3
 import logging
-import time
 from datetime import datetime
+from aiohttp import ClientSession, ClientTimeout
 
 # ------------------------------------
 # Logging Setup
@@ -24,7 +25,7 @@ s3_bucket_name = os.getenv("S3_BUCKET_NAME")
 alpha_vantage_api_key = os.getenv("ALPHAVANTAGE_API_KEY")
 
 if not alpha_vantage_api_key:
-    raise ValueError("Missing Alpha Vantage key. Set ALPHAVANTAGE_API_KEY in your environment variables.")
+    raise ValueError("Missing Alpha Vantage key. Set ALPHAVANTAGE_API_KEY.")
 
 # ------------------------------------
 # Create S3 Client
@@ -36,121 +37,116 @@ s3_client = boto3.client(
     region_name=aws_region,
 )
 
-# Output folder
+# Output folder (local)
 local_dir = "./stock_data"
 os.makedirs(local_dir, exist_ok=True)
 
 # ------------------------------------
-# Fetch S&P 500 Tickers (RELIABLE SOURCE)
+# Fetch S&P 500 Tickers (DataHub – most reliable)
 # ------------------------------------
 def fetch_sp500_tickers():
     logging.info("🔍 Fetching S&P 500 tickers from DataHub…")
-
-    SP500_URL = "https://datahub.io/core/s-and-p-500-companies/r/constituents.csv"
+    url = "https://datahub.io/core/s-and-p-500-companies/r/constituents.csv"
 
     try:
-        df = pd.read_csv(SP500_URL)
+        df = pd.read_csv(url)
     except Exception as e:
         raise RuntimeError(f"Failed to fetch S&P500 list: {e}")
 
     if "Symbol" not in df.columns:
-        raise RuntimeError("S&P500 CSV missing 'Symbol' column.")
+        raise RuntimeError("S&P500 list missing expected 'Symbol' column.")
 
-    tickers = df["Symbol"].astype(str).str.upper().tolist()
-
-    logging.info(f"✅ Loaded {len(tickers)} S&P500 tickers.")
+    tickers = df["Symbol"].str.upper().tolist()
+    logging.info(f"✅ Loaded {len(tickers)} S&P 500 tickers.")
     return tickers
 
-
 # ------------------------------------
-# Fetch Alpha Vantage Daily Close
+# Async Alpha Vantage Fetch
 # ------------------------------------
-def fetch_daily_close(ticker):
-    """Fetch TIME_SERIES_DAILY from Alpha Vantage. Returns dataframe or None."""
+async def fetch_daily_close(session: ClientSession, ticker: str):
+    """Async fetch TIME_SERIES_DAILY from Alpha Vantage."""
     url = (
         "https://www.alphavantage.co/query"
         f"?function=TIME_SERIES_DAILY&symbol={ticker}&apikey={alpha_vantage_api_key}"
     )
 
     try:
-        response = requests.get(url, timeout=20)
-        response.raise_for_status()
+        async with session.get(url) as resp:
+            if resp.status != 200:
+                logging.warning(f"⚠️ {ticker}: HTTP {resp.status}")
+                return None
+
+            data = await resp.json()
+
     except Exception as e:
-        logging.warning(f"⚠️ API request failed for {ticker}: {e}")
+        logging.warning(f"⚠️ {ticker}: API request failed: {e}")
         return None
 
-    json_data = response.json()
-
-    if "Time Series (Daily)" not in json_data:
-        logging.warning(f"⚠️ No daily data returned for {ticker}. Possible rate limit.")
+    # Parse the JSON response
+    ts = data.get("Time Series (Daily)")
+    if ts is None:
+        # API hit limit or no data
         return None
 
     try:
-        df = pd.DataFrame.from_dict(json_data["Time Series (Daily)"], orient="index")
-        df.index.name = "date"
-        df.reset_index(inplace=True)
+        df = pd.DataFrame.from_dict(ts, orient="index").reset_index()
+        df.columns = ["date"] + list(df.columns[1:])
         df["ticker"] = ticker
         return df
     except Exception as e:
-        logging.warning(f"⚠️ Failed to parse data for {ticker}: {e}")
+        logging.warning(f"⚠️ {ticker}: Failed to parse daily time series: {e}")
         return None
 
+# ------------------------------------
+# Async Driver (parallel fetching)
+# ------------------------------------
+async def fetch_all_tickers(tickers):
+    timeout = ClientTimeout(total=30)
+    connector = aiohttp.TCPConnector(limit=100)  # massive speed boost
+
+    async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
+        tasks = []
+        for ticker in tickers:
+            tasks.append(fetch_daily_close(session, ticker))
+
+        logging.info(f"🚀 Launching {len(tasks)} async API calls…")
+
+        results = await asyncio.gather(*tasks)
+
+    return [df for df in results if df is not None]
 
 # ------------------------------------
-# Main Process
+# Main
 # ------------------------------------
 def main():
-    logging.info("🔍 Starting S&P500 daily close fetch...")
+    logging.info("🔍 Starting async S&P500 Alpha Vantage daily close fetch...")
 
-    # 1️⃣ Fetch Tickers
+    # 1️⃣ Fetch S&P500 Tickers
     tickers = fetch_sp500_tickers()
 
-    all_frames = []
-
-    # If you have Alpha Vantage PREMIUM:
-    # Allowed: 75 requests per minute
-    PREMIUM_RATE_LIMIT = 75
-    SLEEP_SECONDS = 15  # much faster — sleep every 75 calls only
-
-    api_calls = 0
-
-    # 2️⃣ Loop Through Tickers
-    for ticker in tickers:
-        logging.info(f"📈 Fetching {ticker}...")
-        df = fetch_daily_close(ticker)
-
-        if df is not None:
-            all_frames.append(df)
-
-        api_calls += 1
-
-        # Rate-limit protection for PREMIUM plan
-        if api_calls % PREMIUM_RATE_LIMIT == 0:
-            logging.info(f"⏳ Sleeping {SLEEP_SECONDS} seconds (Premium rate limit)...")
-            time.sleep(SLEEP_SECONDS)
+    # 2️⃣ Run async fetcher
+    all_frames = asyncio.run(fetch_all_tickers(tickers))
 
     if not all_frames:
-        logging.error("❌ No data returned for any ticker.")
+        logging.error("❌ No data returned for any tickers.")
         return
 
-    # 3️⃣ Combine and Save
+    # 3️⃣ Combine + save to file
     combined = pd.concat(all_frames)
-    combined_file_path = os.path.join(local_dir, "combinedstockdata.csv")
+    output_file = os.path.join(local_dir, "combinedstockdata.csv")
+    combined.to_csv(output_file, index=False)
 
-    combined.to_csv(combined_file_path, index=False)
-    logging.info(f"💾 Saved combined file → {combined_file_path}")
+    logging.info(f"💾 Saved → {output_file}")
 
     # 4️⃣ Upload to S3
-    s3_client.upload_file(combined_file_path, s3_bucket_name, "combinedstockdata.csv")
-    logging.info(
-        f"🚀 Uploaded to S3 → s3://{s3_bucket_name}/combinedstockdata.csv"
-    )
+    s3_client.upload_file(output_file, s3_bucket_name, "combinedstockdata.csv")
 
+    logging.info(f"🚀 Uploaded to S3 → s3://{s3_bucket_name}/combinedstockdata.csv")
     logging.info("🎉 Script complete!")
-
 
 # ------------------------------------
 # Run
 # ------------------------------------
 if __name__ == "__main__":
     main()
+
