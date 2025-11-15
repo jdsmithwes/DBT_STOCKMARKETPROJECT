@@ -19,6 +19,7 @@ models:
     +database: STOCK_DATA
     +materialized: table
     +schema: ""
+    +static_analysis: unsafe
 
     raw:
       +materialized: view
@@ -27,6 +28,7 @@ models:
     staging:
       +materialized: view
       +schema: STAGING
+      +static_analysis: unsafe
 
     intermediate:
       +materialized: table
