@@ -1,0 +1,35 @@
+name: Daily S&P500 Alpha Vantage Load
+
+on:
+  schedule:
+    - cron: "0 4 * * 1-5"   # 11PM EST → 4AM UTC next day
+  workflow_dispatch:        # allow manual run
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run async Alpha Vantage loader
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: "us-east-1"
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
+        run: |
+          python "Python Scripts/StockDataApiCallScript.py"
+
