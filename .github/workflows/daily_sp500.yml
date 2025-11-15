@@ -3,19 +3,18 @@ name: Daily S&P500 AlphaVantage Load
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 4 * * 1-5"
+    - cron: "0 4 * * 1-5"   # 11 PM EST → 4 AM UTC
 
 jobs:
   run-script:
     runs-on: ubuntu-latest
 
-  env:
-    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    AWS_REGION: "us-east-1"
-    S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-    ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
-
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: "us-east-1"
+      S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+      ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
 
     steps:
       - name: Checkout repo
@@ -31,3 +30,4 @@ jobs:
 
       - name: Run script
         run: python "Python Scripts/StockDataApiCallScript.py"
+
