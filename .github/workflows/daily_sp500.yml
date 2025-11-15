@@ -1,9 +1,9 @@
 name: Daily S&P500 AlphaVantage Load
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:        # manual run
   schedule:
-    - cron: "0 4 * * 1-5"   # 11pm EST = 4am UTC
+    - cron: "0 4 * * 1-5"    # 11 PM EST = 4 AM UTC
 
 jobs:
   run-script:
@@ -13,15 +13,8 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION: "us-east-1"
-      S3_BUCKET_NAME: "dbtstockprojectdata"
+      S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
       ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
-      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-      SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-      SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-      SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
-      SNOWFLAKE_DATABASE: "STOCK_DATA"
-      SNOWFLAKE_SCHEMA: "RAW"
 
     steps:
       - name: Checkout repo
@@ -35,51 +28,5 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run Alpha Vantage S&P500 script
+      - name: Run script
         run: python "Python Scripts/StockDataApiCallScript.py"
-
-      - name: Install Snowflake Python connector
-        run: pip install snowflake-connector-python
-
-      - name: Run Snowflake COPY INTO
-        run: |
-          python3 - << 'EOF'
-          import snowflake.connector
-          import os
-
-          print("Connecting to Snowflake...")
-
-          conn = snowflake.connector.connect(
-              user=os.getenv("SNOWFLAKE_USER"),
-              password=os.getenv("SNOWFLAKE_PASSWORD"),
-              account=os.getenv("SNOWFLAKE_ACCOUNT"),
-              warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
-              role=os.getenv("SNOWFLAKE_ROLE"),
-              database=os.getenv("SNOWFLAKE_DATABASE"),
-              schema=os.getenv("SNOWFLAKE_SCHEMA"),
-          )
-
-          cs = conn.cursor()
-
-          copy_sql = """
-          COPY INTO STOCK_DATA.RAW.STOCKDATA_RAW
-          FROM @STOCK_DATA.PUBLIC.DBTSTOCK_STAGE2
-          FILE_FORMAT = (
-              TYPE = 'CSV',
-              FIELD_DELIMITER = ',',
-              SKIP_HEADER = 1,
-              FIELD_OPTIONALLY_ENCLOSED_BY = '"',
-              ERROR_ON_COLUMN_COUNT_MISMATCH = FALSE,
-              NULL_IF = ('', 'NULL')
-          )
-          ON_ERROR = 'CONTINUE';
-          """
-
-          print("Running COPY INTO...")
-          cs.execute(copy_sql)
-          print("COPY INTO completed successfully.")
-
-          cs.close()
-          conn.close()
-          EOF
-
