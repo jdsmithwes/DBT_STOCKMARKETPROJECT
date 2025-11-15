@@ -29,7 +29,7 @@ ALPHAVANTAGE_API_KEY = os.getenv("ALPHAVANTAGE_API_KEY")
 if not ALPHAVANTAGE_API_KEY:
     raise ValueError("Missing ALPHAVANTAGE_API_KEY environment variable.")
 
-S3_KEY = "combined_stock_data_full_history.csv"
+S3_KEY = "combined_stock_data.csv"
 
 # ------------------------------------
 # S3 Client
@@ -40,19 +40,6 @@ s3_client = boto3.client(
     aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
     region_name=AWS_REGION,
 )
-
-# ------------------------------------
-# Load Existing S3 Data (optional merge)
-# ------------------------------------
-def load_existing_s3_data():
-    try:
-        csv_obj = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=S3_KEY)
-        existing_df = pd.read_csv(csv_obj["Body"])
-        logging.info(f"📄 Loaded existing dataset: {existing_df.shape[0]} rows")
-        return existing_df
-    except s3_client.exceptions.NoSuchKey:
-        logging.info("ℹ️ No existing S3 file found. Creating new dataset.")
-        return pd.DataFrame()
 
 # ------------------------------------
 # Fetch S&P 500 Tickers
@@ -153,7 +140,7 @@ async def fetch_all_full_history(tickers):
             if df is not None:
                 all_results.append(df)
 
-            await asyncio.sleep(CALL_DELAY)  # stay within API limits
+            await asyncio.sleep(CALL_DELAY)
 
     return all_results
 
@@ -163,7 +150,6 @@ async def fetch_all_full_history(tickers):
 def main():
     logging.info("🚀 Starting FULL historical S&P500 load")
 
-    existing_df = load_existing_s3_data()
     tickers = fetch_sp500_tickers()
 
     new_data = asyncio.run(fetch_all_full_history(tickers))
@@ -172,30 +158,21 @@ def main():
         logging.warning("⚠️ No data returned!")
         return
 
-    new_df = pd.concat(new_data, ignore_index=True)
+    # FULL REFRESH — NO MERGING — NO COMPARING TO S3
+    final_df = pd.concat(new_data, ignore_index=True)
 
-    logging.info(f"📊 Downloaded {new_df.shape[0]} total rows (full history)")
-
-    # Merge with existing S3 data if exists
-    if not existing_df.empty:
-        final_df = (
-            pd.concat([existing_df, new_df], ignore_index=True)
-            .drop_duplicates(subset=["ticker", "date"])
-            .sort_values(["ticker", "date"])
-        )
-    else:
-        final_df = new_df
+    logging.info(f"📊 Downloaded {final_df.shape[0]} total rows (full history)")
 
     # Save local
-    output_file = "./combined_stock_data_full_history.csv"
+    output_file = "./combined_stock_data.csv"
     final_df.to_csv(output_file, index=False)
-    logging.info("💾 Saved full dataset locally")
+    logging.info("💾 Saved dataset locally")
 
     # Upload to S3
     s3_client.upload_file(output_file, S3_BUCKET_NAME, S3_KEY)
-    logging.info(f"🚀 Uploaded full dataset → s3://{S3_BUCKET_NAME}/{S3_KEY}")
+    logging.info(f"🚀 Uploaded dataset → s3://{S3_BUCKET_NAME}/{S3_KEY}")
 
-    logging.info("🎉 Full historical load complete!")
+    logging.info("🎉 Full historical refresh complete!")
 
 # ------------------------------------
 # Run
