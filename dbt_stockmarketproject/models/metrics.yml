@@ -3,31 +3,16 @@ version: 2
 metrics:
 
   - name: total_market_cap
-    model: semantic_model:company_master
-    label: "Total Market Capitalization"
     type: simple
     type_params:
       measure: total_market_cap
 
-  - name: avg_pe_ratio
-    model: semantic_model:company_master
-    label: "Average PE Ratio"
+  - name: average_pe_ratio
     type: simple
     type_params:
       measure: avg_pe_ratio
 
-  - name: avg_return_1m
-    model: semantic_model:company_master
-    label: "Average 1-Month Return"
+  - name: average_monthly_return
     type: simple
     type_params:
       measure: avg_return_1m
-
-  - name: sector_avg_market_cap
-    model: semantic_model:company_master
-    label: "Sector Average Market Cap"
-    type: derived
-    type_params:
-      expression: avg_market_cap
-      group_by:
-        - sector

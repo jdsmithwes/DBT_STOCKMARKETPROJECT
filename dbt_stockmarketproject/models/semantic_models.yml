@@ -1,0 +1,53 @@
+version: 2
+
+semantic_models:
+
+  - name: company_master
+    model: ref('mart_company_master')
+
+    entities:
+      - name: ticker
+        type: primary
+
+    measures:
+      - name: total_market_cap
+        agg: sum
+        expr: market_cap
+
+      - name: avg_pe_ratio
+        agg: average
+        expr: pe_ratio
+
+      - name: avg_return_1m
+        agg: average
+        expr: one_month_return
+
+    dimensions:
+      - name: sector
+      - name: industry
+      - name: name
+      - name: latest_price_date
+        type: time
+
+  - name: price_history
+    model: ref('mart_price_history_enriched')
+
+    entities:
+      - name: stock_ticker
+        type: foreign
+        ref: company_master.ticker
+
+    measures:
+      - name: avg_daily_return
+        agg: average
+        expr: daily_return
+
+      - name: avg_volume
+        agg: average
+        expr: trading_volume
+
+    dimensions:
+      - name: trading_date
+        type: time
+      - name: sector
+      - name: industry
