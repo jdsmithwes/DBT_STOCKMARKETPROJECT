@@ -1,10 +1,11 @@
 import os
 import asyncio
 import aiohttp
-import pandas as pd
+import json
 import boto3
 import logging
 from datetime import datetime
+import pandas as pd
 from aiohttp import ClientSession, ClientTimeout
 from tenacity import retry, stop_after_attempt, wait_fixed
 
@@ -17,7 +18,7 @@ logging.basicConfig(
 )
 
 # -----------------------------------------------------------
-# Environment Variables (same as your stock price script)
+# Environment Variables
 # -----------------------------------------------------------
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
@@ -39,29 +40,16 @@ s3_client = boto3.client(
 )
 
 # -----------------------------------------------------------
-# Fetch S&P 500 Tickers
+# Fetch S&P 500 tickers
 # -----------------------------------------------------------
 def fetch_sp500_tickers():
     df = pd.read_csv("https://datahub.io/core/s-and-p-500-companies/r/constituents.csv")
     return df["Symbol"].str.upper().tolist()
 
 # -----------------------------------------------------------
-# Normalize Overview JSON → DataFrame
+# Retry wrapper for fetching
 # -----------------------------------------------------------
-def normalize_overview_json(ticker, json_data):
-    if not json_data or "Symbol" not in json_data:
-        return None
-
-    df = pd.DataFrame([json_data])
-    df["ticker"] = ticker
-    df["ingest_timestamp"] = datetime.now()
-
-    return df
-
-# -----------------------------------------------------------
-# Async Overview Fetch with Retry Logic
-# -----------------------------------------------------------
-@retry(stop=stop_after_attempt(3), wait=wait_fixed(1))  # faster retry for premium
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
 async def fetch_overview(session: ClientSession, ticker: str):
     url = (
         "https://www.alphavantage.co/query"
@@ -74,78 +62,72 @@ async def fetch_overview(session: ClientSession, ticker: str):
 
         data = await resp.json()
 
+    # Skip empty responses
     if not data or "Symbol" not in data:
-        logging.warning(f"⚠️ {ticker}: No overview data returned.")
+        logging.warning(f"⚠️ No data for {ticker}")
         return None
 
-    return normalize_overview_json(ticker, data)
+    return data
 
 # -----------------------------------------------------------
-# Premium Rate Limiter
+# Async fetch loop
 # -----------------------------------------------------------
-# Premium users reliably get 120 calls/min
-# 0.5-second delay protects from burst throttling
-CALL_DELAY = 0.5
+CALL_DELAY = 0.5  # premium-safe
 
-# -----------------------------------------------------------
-# Async Driver – Collect All DataFrames
-# -----------------------------------------------------------
 async def fetch_all_overviews(tickers):
-    timeout = ClientTimeout(total=120)  # premium endpoints are fast
-    connector = aiohttp.TCPConnector(limit=120)  # premium concurrency
-
-    all_dfs = []
+    timeout = ClientTimeout(total=120)
+    connector = aiohttp.TCPConnector(limit=120)
 
     async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
         for i, ticker in enumerate(tickers, start=1):
+            logging.info(f"⏳ [{i}/{len(tickers)}] Fetching overview for {ticker}…")
 
-            logging.info(f"⏳ [{i}/{len(tickers)}] Fetching OVERVIEW for {ticker}…")
+            data = await fetch_overview(session, ticker)
 
-            df = await fetch_overview(session, ticker)
-
-            if df is not None:
-                all_dfs.append(df)
+            if data:
+                yield ticker, data
                 logging.info(f"✅ Completed {ticker}")
             else:
-                logging.warning(f"❌ No data for {ticker}")
+                logging.warning(f"❌ Skipped {ticker}")
 
-            await asyncio.sleep(CALL_DELAY)  # premium pacing
-
-    return all_dfs
+            await asyncio.sleep(CALL_DELAY)
 
 # -----------------------------------------------------------
-# Save ONE Unified CSV + Upload to S3
+# Save + Upload JSON
 # -----------------------------------------------------------
-def upload_unified_csv(all_dfs):
-    unified_df = pd.concat(all_dfs, ignore_index=True)
-
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-    filename = f"combined_company_overview_{timestamp}.csv"
+def save_and_upload_json(ticker, data):
+    filename = f"{ticker}.json"
     local_path = f"./{filename}"
 
-    unified_df.to_csv(local_path, index=False)
+    # Save JSON locally
+    with open(local_path, "w") as f:
+        json.dump(data, f)
 
-    s3_key = f"combined_company_overview/{filename}"
+    # Upload to S3
+    s3_key = f"company_overview_json/{filename}"
     s3_client.upload_file(local_path, S3_BUCKET_NAME, s3_key)
 
-    logging.info(f"📤 Uploaded unified file → s3://{S3_BUCKET_NAME}/{s3_key}")
+    logging.info(f"📤 Uploaded {filename} to s3://{S3_BUCKET_NAME}/{s3_key}")
+
+    # Optional: delete local file afterward
+    os.remove(local_path)
 
 # -----------------------------------------------------------
-# Main Workflow
+# Main
 # -----------------------------------------------------------
 def main():
-    logging.info("🚀 STARTING PREMIUM QUARTERLY COMPANY OVERVIEW INGEST")
+    logging.info("🚀 STARTING COMPANY OVERVIEW JSON INGEST")
 
     tickers = fetch_sp500_tickers()
-    all_dfs = asyncio.run(fetch_all_overviews(tickers))
 
-    if not all_dfs:
-        logging.warning("⚠️ No overview data returned.")
-        return
+    # Async driver
+    async def run():
+        async for ticker, data in fetch_all_overviews(tickers):
+            save_and_upload_json(ticker, data)
 
-    upload_unified_csv(all_dfs)
+    asyncio.run(run())
 
-    logging.info("🎉 COMPLETE — Unified overview snapshot uploaded!")
+    logging.info("🎉 COMPLETE — All overview JSON files uploaded!")
 
 # -----------------------------------------------------------
 # Run
