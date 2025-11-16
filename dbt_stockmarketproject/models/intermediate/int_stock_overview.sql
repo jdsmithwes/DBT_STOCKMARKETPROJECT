@@ -16,13 +16,13 @@ WITH companydetails AS (
         gross_profit_ttm       AS gross_profit,
         ebitda,
         pe_ratio               AS pe
-    FROM {{ ref('stg_company_overview') }}
+    FROM {{ ref('stg_stockoverview') }}
 
 )
 
 SELECT *
 FROM companydetails
-ORDER BY market_cap DESC;
+ORDER BY market_cap DESC
 
 
 

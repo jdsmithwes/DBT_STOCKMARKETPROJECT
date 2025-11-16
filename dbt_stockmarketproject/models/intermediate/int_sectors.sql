@@ -8,7 +8,7 @@ WITH context_info AS (
         pe_ratio,
         revenue_ttm,
         gross_profit_ttm
-    FROM {{ ref('stg_company_overview') }}
+    FROM {{ ref('stg_stockoverview') }}
 
 )
 
@@ -22,5 +22,5 @@ SELECT
     AVG(gross_profit_ttm)                         AS avg_gross_profit_ttm
 FROM context_info
 GROUP BY industry
-ORDER BY number_of_companies DESC;
+ORDER BY number_of_companies DESC
 
