@@ -1,67 +1,45 @@
+{{ config(materialized='table') }}
+
 WITH base AS (
-    SELECT *
+
+    SELECT
+        trading_date,
+        stock_ticker,
+        open_price,
+        high_price AS interday_high_price,
+        low_price  AS interday_low_price,
+        close_price,
+        adjusted_close_price,
+        trading_volume,
+        dividend_amount,
+        split_coefficient
     FROM {{ ref('stg_stockpricedata') }}
+
 ),
 
-calendar AS (
+summary AS (
+
     SELECT
-        MIN(date) AS start_date,
-        MAX(date) AS end_date
+        stock_ticker,
+
+        -- first and last trading days
+        MIN(trading_date) AS first_trading_date,
+        MAX(trading_date) AS last_trading_date,
+
+        -- prices
+        AVG(close_price) AS avg_close_price,
+        MAX(interday_high_price) AS all_time_high,
+        MIN(interday_low_price)  AS all_time_low,
+
+        -- volume
+        SUM(trading_volume) AS total_volume_traded,
+        MAX(trading_volume) AS max_daily_volume,
+
+        -- dividends
+        SUM(dividend_amount) AS total_dividends
+
     FROM base
-),
-
-dates AS (
-    SELECT
-        DATEADD(day, seq4(), (SELECT start_date FROM calendar)) AS date
-    FROM TABLE(GENERATOR(ROWCOUNT => 20000))
-    WHERE date <= (SELECT end_date FROM calendar)
-),
-
-tickers AS (
-    SELECT DISTINCT ticker FROM base
-),
-
-grid AS (
-    SELECT
-        t.ticker,
-        d.date
-    FROM tickers t
-    CROSS JOIN dates d
-),
-
-joined AS (
-    SELECT
-        g.ticker,
-        g.date,
-        b.open,
-        b.high,
-        b.low,
-        b.close,
-        b.adjusted_close,
-        b.volume,
-        b.dividend_amount,
-        b.split_coefficient,
-        b.load_time
-    FROM grid g
-    LEFT JOIN base b
-        ON g.ticker = b.ticker
-       AND g.date = b.date
-),
-
-filled AS (
-    SELECT
-        ticker,
-        date,
-        LAST_VALUE(open IGNORE NULLS) OVER (PARTITION BY ticker ORDER BY date) AS open,
-        LAST_VALUE(high IGNORE NULLS) OVER (PARTITION BY ticker ORDER BY date) AS high,
-        LAST_VALUE(low IGNORE NULLS) OVER (PARTITION BY ticker ORDER BY date) AS low,
-        LAST_VALUE(close IGNORE NULLS) OVER (PARTITION BY ticker ORDER BY date) AS close,
-        LAST_VALUE(adjusted_close IGNORE NULLS) OVER (PARTITION BY ticker ORDER BY date) AS adjusted_close,
-        0 AS volume,  -- weekends/holidays
-        0 AS dividend_amount,
-        LAST_VALUE(split_coefficient IGNORE NULLS) OVER (PARTITION BY ticker ORDER BY date) AS split_coefficient,
-        MAX(load_time) OVER (PARTITION BY ticker) AS last_load_time
-    FROM joined
+    GROUP BY stock_ticker
 )
 
-SELECT * FROM filled;
+SELECT * FROM summary;

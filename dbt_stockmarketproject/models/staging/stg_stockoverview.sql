@@ -62,7 +62,7 @@ WITH company_overview AS (
         TRY_TO_DATE(NULLIF(UPPER(COL54), 'NONE'), 'YYYY-MM-DD') AS "DividendDate",
         TRY_TO_DATE(NULLIF(UPPER(COL55), 'NONE'), 'YYYY-MM-DD') AS "ExDividendDate",
         COL56 AS "Ticker"
-    FROM {{ source('stock_data', 'COMPANY_OVERVIEW_RAW') }}
+    FROM {{ source('stock_data', 'company_overview_raw') }}
 
 )
 

@@ -13,7 +13,7 @@ with stockdata as (
         ADJUSTED_CLOSE as adjusted_close_price
         
 
-        from {{ source('stock_data', 'STOCK_PRICE_DATA') }}
+        from {{ source('stock_data', 'stock_price_data_raw') }}
 
     )
 
