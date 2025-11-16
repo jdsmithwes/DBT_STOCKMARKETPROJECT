@@ -1,4 +1,4 @@
-name: 'stock_data'
+name: 'dbt_stockmarketproject'
 version: '1.0.0'
 config-version: 2
 
@@ -23,7 +23,7 @@ clean-targets:
 #  MODEL CONFIGURATION
 # -----------------------------------------------------------------------------
 models:
-  stock_data:
+  dbt_stockmarketproject:
 
     # ----------------------------
     # STAGING MODELS
@@ -62,5 +62,3 @@ quoting:
   database: false
   schema: false
   identifier: false
-
-
