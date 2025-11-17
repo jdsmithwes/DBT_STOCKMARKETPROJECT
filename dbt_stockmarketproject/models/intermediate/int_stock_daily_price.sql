@@ -1,18 +1,16 @@
-{{ config(materialized='table') }}
-
 WITH base AS (
 
     SELECT
-        trading_date,
-        stock_ticker,
-        open_price,
-        interday_high_price,
-        interday_low_price,
-        close_price,
-        adjusted_close_price,
-        trading_volume,
-        dividend_amount,
-        split_coefficient
+        DATE                    AS trading_date,
+        TICKER                  AS stock_ticker,
+        OPEN                    AS open_price,
+        HIGH                    AS interday_high_price,
+        LOW                     AS interday_low_price,
+        CLOSE                   AS close_price,
+        ADJ_CLOSE               AS adjusted_close_price,
+        VOLUME                  AS trading_volume,
+        DIVIDEND                AS dividend_amount,
+        SPLIT                   AS split_coefficient
     FROM {{ ref('stg_stockpricedata') }}
 
 ),

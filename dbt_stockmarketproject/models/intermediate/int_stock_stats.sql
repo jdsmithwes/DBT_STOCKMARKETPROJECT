@@ -1,36 +1,78 @@
-{{ config(materialized='table') }}
+WITH fundamentals AS (
 
-with agg as (
-    select
-        stock_ticker,
-        min(open_price) as min_open_price,
-        max(open_price) as max_open_price, 
-        min(close_price) as min_close_price,
-        max(close_price) as max_close_price,
-        min(trading_volume) as min_trading_volume,
-        max(trading_volume) as max_trading_volume
-    from {{ ref('stg_stockpricedata') }}
-    group by stock_ticker
+    SELECT
+        TICKER,
+        NAME,
+        ASSETTYPE,
+        DESCRIPTION,
+        CIK,
+        EXCHANGE,
+        CURRENCY,
+        COUNTRY,
+        SECTOR,
+        INDUSTRY,
+        ADDRESS,
+        FISCALYEAREND,
+        LATESTQUARTER,
+        MARKETCAPITALIZATION,
+        EBITDA,
+        PERATIO,
+        PEGRATIO,
+        BOOKVALUE,
+        DIVIDENDPERSHARE,
+        DIVIDENDYIELD,
+        EPS,
+        REVENUEPERSHARETTM,
+        PROFITMARGIN,
+        OPERATINGMARGINTTM,
+        RETURNONASSETS,
+        RETURNONEQUITY,
+        REVENUETTM,
+        GROSSPROFITTTM,
+        DILUTEDEPSTTM,
+        QUARTERLYEARNINGSGROWTHYOY,
+        QUARTERLYREVENUEGROWTHYOY,
+        ANALYSTTARGETPRICE,
+        TRAILINGPE,
+        FORWARDPE,
+        PRICETOSALESTTM,
+        PRICETOBOOKRATIO,
+        EVTOREVENUE,
+        EVTOEBITDA,
+        BETA,
+        WEEK52HIGH,
+        WEEK52LOW,
+        DAY50MOVINGAVERAGE,
+        DAY200MOVINGAVERAGE,
+        SHARESOUTSTANDING,
+        DIVIDENDDATE,
+        EXDIVIDENDDATE,
+        SOURCE_FILE,
+        LOAD_TIME
+    FROM {{ ref('stg_stockoverview') }}
+
 ),
 
-stock_info as (
-    select
-        stock_ticker,
-        min_open_price,
-        max_open_price,
-        min_close_price,
-        max_close_price,
-        min_trading_volume,
-        max_trading_volume,
-        (max_close_price - min_open_price) / nullif(min_open_price, 0) as price_change_percentage,
-        (max_close_price * max_trading_volume) as max_market_capitalization,
-        (max_close_price * max_trading_volume) / nullif((min_close_price * min_trading_volume), 0) as market_cap_change_percentage
-    from agg
+latest_price AS (
+
+    SELECT
+        stock_ticker AS ticker,
+        close_price,
+        trading_volume,
+        trading_date
+    FROM {{ ref('stg_stockpricedata') }}
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY stock_ticker
+        ORDER BY trading_date DESC
+    ) = 1
 )
 
-select *
-from stock_info
-order by max_trading_volume desc
+SELECT
+    f.*,
+    lp.close_price      AS latest_close_price,
+    lp.trading_volume   AS latest_volume,
+    lp.trading_date     AS latest_price_date
 
-
-
+FROM fundamentals f
+LEFT JOIN latest_price lp
+    ON f.ticker = lp.ticker;

@@ -1,13 +1,13 @@
 WITH fundamentals AS (
     SELECT
-        ticker,
-        return_on_equity,
-        return_on_assets,
-        profit_margin,
-        operating_margin_ttm,
-        gross_profit_ttm,
-        revenue_ttm,
-        beta
+        TICKER,
+        RETURNONEQUITY,
+        RETURNONASSETS,
+        PROFITMARGIN,
+        OPERATINGMARGINTTM,
+        GROSSPROFITTTM,
+        REVENUETTM,
+        BETA
     FROM {{ ref('stg_stockoverview') }}
 ),
 
@@ -19,23 +19,26 @@ vol AS (
 )
 
 SELECT
-    f.ticker,
-    f.return_on_equity,
-    f.return_on_assets,
-    f.profit_margin,
-    f.operating_margin_ttm,
-    f.gross_profit_ttm / NULLIF(f.revenue_ttm, 0) AS gross_margin,
+    f.TICKER,
+    f.RETURNONEQUITY                  AS return_on_equity,
+    f.RETURNONASSETS                  AS return_on_assets,
+    f.PROFITMARGIN                    AS profit_margin,
+    f.OPERATINGMARGINTTM              AS operating_margin_ttm,
+
+    -- Gross margin safely calculated
+    f.GROSSPROFITTTM / NULLIF(f.REVENUETTM, 0) AS gross_margin,
 
     v.daily_volatility,
-    f.beta,
+    f.BETA,
 
+    -- Unified quality score
     (
-        COALESCE(f.return_on_equity, 0) +
-        COALESCE(f.return_on_assets, 0) +
-        COALESCE(f.profit_margin, 0) +
-        COALESCE(f.operating_margin_ttm, 0)
+        COALESCE(f.RETURNONEQUITY, 0) +
+        COALESCE(f.RETURNONASSETS, 0) +
+        COALESCE(f.PROFITMARGIN, 0) +
+        COALESCE(f.OPERATINGMARGINTTM, 0)
     ) AS quality_score
 
 FROM fundamentals f
 LEFT JOIN vol v
-    ON f.ticker = v.stock_ticker
+    ON f.TICKER = v.stock_ticker

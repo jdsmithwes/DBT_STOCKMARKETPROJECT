@@ -1,28 +1,47 @@
-WITH companydetails AS (
+{{ config(materialized='view') }}
 
-    SELECT
-        ticker,
-        name,
-        description,
-        exchange,
-        currency,
-        sector,
-        industry,
-        fiscal_year_end,
-        latest_quarter,
-        market_cap,
-        shares_outstanding,
-        revenue_ttm            AS revenue,
-        gross_profit_ttm       AS gross_profit,
-        ebitda,
-        pe_ratio               AS pe
-    FROM {{ ref('stg_stockoverview') }}
+select
+    TICKER,
+    NAME,
+    SECTOR,
+    INDUSTRY,
+    COUNTRY,
+    EXCHANGE,
+    FISCALYEAREND,
+    LATESTQUARTER,
+    MARKETCAPITALIZATION,
+    SHARESOUTSTANDING,
+    EBITDA,
+    REVENUETTM,
+    GROSSPROFITTTM,
+    REVENUEPERSHARETTM,
+    EPS,
+    DILUTEDEPSTTM,
+    PROFITMARGIN,
+    OPERATINGMARGINTTM,
+    RETURNONASSETS,
+    RETURNONEQUITY,
+    PERATIO,
+    FORWARDPE,
+    PEGRATIO,
+    PRICETOBOOKRATIO,
+    PRICETOSALESTTM,
+    EVTOREVENUE,
+    EVTOEBITDA,
+    BETA,
+    WEEK52HIGH,
+    WEEK52LOW,
+    DAY50MOVINGAVERAGE,
+    DAY200MOVINGAVERAGE,
+    DIVIDENDYIELD,
+    DIVIDENDPERSHARE,
+    DIVIDENDDATE,
+    EXDIVIDENDDATE,
+    ANALYSTTARGETPRICE,
+    SOURCE_FILE,
+    LOAD_TIME
 
-)
-
-SELECT *
-FROM companydetails
-ORDER BY market_cap DESC
+from {{ ref('stg_stockoverview') }}
 
 
 

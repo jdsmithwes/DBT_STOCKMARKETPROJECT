@@ -1,26 +1,23 @@
 WITH context_info AS (
-
     SELECT
-        industry,
-        ticker,
-        market_cap,
-        ebitda,
-        pe_ratio,
-        revenue_ttm,
-        gross_profit_ttm
+        INDUSTRY,
+        TICKER,
+        MARKETCAPITALIZATION,
+        EBITDA,
+        PERATIO,
+        REVENUETTM,
+        GROSSPROFITTTM
     FROM {{ ref('stg_stockoverview') }}
-
 )
 
 SELECT
-    industry,
-    COUNT(DISTINCT ticker)                       AS number_of_companies,
-    AVG(market_cap)                              AS avg_market_cap,
-    AVG(ebitda)                                   AS avg_ebitda,
-    AVG(pe_ratio)                                 AS avg_pe_ratio,
-    AVG(revenue_ttm)                              AS avg_revenue_ttm,
-    AVG(gross_profit_ttm)                         AS avg_gross_profit_ttm
+    INDUSTRY,
+    COUNT(DISTINCT TICKER)           AS number_of_companies,
+    AVG(MARKETCAPITALIZATION)        AS avg_market_cap,
+    AVG(EBITDA)                      AS avg_ebitda,
+    AVG(PERATIO)                     AS avg_pe_ratio,
+    AVG(REVENUETTM)                  AS avg_revenue_ttm,
+    AVG(GROSSPROFITTTM)              AS avg_gross_profit_ttm
 FROM context_info
-GROUP BY industry
-ORDER BY number_of_companies DESC
-
+GROUP BY INDUSTRY
+ORDER BY number_of_companies DESC;

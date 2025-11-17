@@ -1,9 +1,60 @@
 WITH fundamentals AS (
-    SELECT *
+
+    SELECT
+        TICKER,
+        NAME,
+        ASSETTYPE,
+        DESCRIPTION,
+        CIK,
+        EXCHANGE,
+        CURRENCY,
+        COUNTRY,
+        SECTOR,
+        INDUSTRY,
+        ADDRESS,
+        FISCALYEAREND,
+        LATESTQUARTER,
+        MARKETCAPITALIZATION,
+        EBITDA,
+        PERATIO,
+        PEGRATIO,
+        BOOKVALUE,
+        DIVIDENDPERSHARE,
+        DIVIDENDYIELD,
+        EPS,
+        REVENUEPERSHARETTM,
+        PROFITMARGIN,
+        OPERATINGMARGINTTM,
+        RETURNONASSETS,
+        RETURNONEQUITY,
+        REVENUETTM,
+        GROSSPROFITTTM,
+        DILUTEDEPSTTM,
+        QUARTERLYEARNINGSGROWTHYOY,
+        QUARTERLYREVENUEGROWTHYOY,
+        ANALYSTTARGETPRICE,
+        TRAILINGPE,
+        FORWARDPE,
+        PRICETOSALESTTM,
+        PRICETOBOOKRATIO,
+        EVTOREVENUE,
+        EVTOEBITDA,
+        BETA,
+        WEEK52HIGH,
+        WEEK52LOW,
+        DAY50MOVINGAVERAGE,
+        DAY200MOVINGAVERAGE,
+        SHARESOUTSTANDING,
+        DIVIDENDDATE,
+        EXDIVIDENDDATE,
+        SOURCE_FILE,
+        INGEST_TIMESTAMP
     FROM {{ ref('stg_stockoverview') }}
+
 ),
 
 latest_price AS (
+
     SELECT
         stock_ticker AS ticker,
         close_price,
@@ -17,9 +68,9 @@ latest_price AS (
 
 SELECT
     f.*,
-    lp.close_price AS latest_close_price,
-    lp.trading_volume AS latest_volume,
-    lp.trading_date  AS latest_price_date
+    lp.close_price      AS latest_close_price,
+    lp.trading_volume   AS latest_volume,
+    lp.trading_date     AS latest_price_date
 
 FROM fundamentals f
 LEFT JOIN latest_price lp
