@@ -1,5 +1,11 @@
 # My First DBT Project
 
+## Table of Contents
+- [The Inspiration](#the-inspiration)
+- [Biggest Lessons So Far.....](#biggest-lessons-so-far)
+- [Learn From Generative AI..Just Don't Consume it](#learn-from-generative-aijust-dont-consume-it)
+
+
 ## The Inspiration
 
 This project was inspired by stakeholders raising concerns about perfoming current data tasks in the future state data platform that will utilize DBT for data transformations. While other data engineers on my team exclaimed how straightforward DBT was, as a business analyst, I could understand the fears my stakeholders expressed. Github workflows and utilizing an IDE like VS Code can seem very complex to a non-technical professional.
