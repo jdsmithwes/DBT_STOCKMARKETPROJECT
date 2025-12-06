@@ -1,22 +1,40 @@
 version: 2
 
 models:
+
   - name: stg_stockpricedata
+    description: "Cleaned incremental staging model for stock price data."
+
     tests:
       - unique:
           column_name: ["stock_ticker", "trading_date"]
 
       - not_null: stock_ticker
       - not_null: trading_date
+      - not_null: close_price
+      - not_null: adjusted_close_price
+      - not_null: interday_high_price
+      - not_null: interday_low_price
 
       - dbt_utils.accepted_range:
-          column_name: open_price
+          column_name: trading_volume
           min_value: 0
 
       - dbt_utils.accepted_range:
           column_name: close_price
           min_value: 0
 
-      - dbt_utils.accepted_range:
-          column_name: trading_volume
-          min_value: 0
+      - dbt_utils.expression_is_true:
+          expression: "interday_low_price <= interday_high_price"
+
+      - dbt_expectations.expect_row_values_to_have_recent_data:
+          date_column: trading_date
+          interval: 3 day
+
+  - name: stg_companyoverview
+    description: "Cleaned staging model for company fundamentals."
+
+    tests:
+      - unique: ticker
+      - not_null: ticker
+      - not_null: name
