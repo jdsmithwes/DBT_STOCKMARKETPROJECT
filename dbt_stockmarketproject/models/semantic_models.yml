@@ -24,10 +24,18 @@ semantic_models:
 
     dimensions:
       - name: sector
+        type: categorical
+
       - name: industry
+        type: categorical
+
       - name: name
+        type: categorical
+
       - name: latest_price_date
         type: time
+        time_granularity: day
+
 
   - name: price_history
     model: ref('mart_price_history_enriched')
@@ -49,5 +57,10 @@ semantic_models:
     dimensions:
       - name: trading_date
         type: time
+        time_granularity: day
+
       - name: sector
+        type: categorical
+
       - name: industry
+        type: categorical
