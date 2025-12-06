@@ -6,10 +6,15 @@ sources:
     schema: RAW
     description: "Raw Snowpipe-ingested data from S3"
 
+    freshness:
+      warn_after: {count: 2, period: hour}
+      error_after: {count: 6, period: hour}
+
     tables:
       - name: stock_price_data_raw
         description: "Raw stock price OHLCV data."
+        loaded_at_field: LOAD_TIME
 
       - name: company_overview_json_raw
         description: "Raw company fundamentals (quarterly)."
-
+        loaded_at_field: LOAD_TIME
