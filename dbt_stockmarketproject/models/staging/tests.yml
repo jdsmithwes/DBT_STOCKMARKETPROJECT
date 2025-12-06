@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: stg_stockpricedata
+    tests:
+      - unique:
+          column_name: ["stock_ticker", "trading_date"]
+
+      - not_null: stock_ticker
+      - not_null: trading_date
+
+      - dbt_utils.accepted_range:
+          column_name: open_price
+          min_value: 0
+
+      - dbt_utils.accepted_range:
+          column_name: close_price
+          min_value: 0
+
+      - dbt_utils.accepted_range:
+          column_name: trading_volume
+          min_value: 0
