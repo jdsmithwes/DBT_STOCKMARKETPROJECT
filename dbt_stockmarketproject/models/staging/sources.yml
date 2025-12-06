@@ -8,13 +8,42 @@ sources:
 
     freshness:
       warn_after: {count: 2, period: day}
-      error_after: {count: 7, period: day}
+      error_after: {count: 6, period: day}
 
     tables:
       - name: stock_price_data_raw
         description: "Raw stock price OHLCV data."
         loaded_at_field: LOAD_TIME
 
+        columns:
+          - name: DATE
+            tests: 
+              - not_null
+
+          - name: TICKER
+            tests:
+              - not_null
+
+          - name: LOAD_TIME
+            tests:
+              - not_null
+
+          - name: CLOSE
+            tests:
+              - dbt_utils.accepted_range:
+                  min_value: 0
+
+          - name: VOLUME
+            tests:
+              - dbt_utils.accepted_range:
+                  min_value: 0
+
       - name: company_overview_json_raw
-        description: "Raw company fundamentals (quarterly)."
+        description: "Raw company fundamentals (JSON from S3)."
         loaded_at_field: LOAD_TIME
+
+        columns:
+          - name: LOAD_TIME
+            tests: 
+              - not_null
+
