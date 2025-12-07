@@ -1,3 +1,4 @@
+---
 version: 2
 
 sources:
@@ -31,7 +32,7 @@ sources:
                   min_value: 0
 
       - name: company_overview_json_raw
-        description: "Raw company fundamentals (API JSON ingested via Snowpipe)."
+        description: "Raw company fundamentals"
         loaded_at_field: LOAD_TIME
 
         columns:

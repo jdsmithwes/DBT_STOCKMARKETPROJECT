@@ -1,6 +1,6 @@
 {{ config(
     materialized='incremental',
-    unique_key='trading_date || \'-\' || ticker',
+    unique_key='trading_date || \'-\' || stock_ticker',
     incremental_strategy='merge'
 ) }}
 
@@ -9,14 +9,14 @@ WITH raw AS (
     SELECT
         DATE                AS trading_date,
         OPEN                AS open_price,
-        HIGH                AS high_price,
-        LOW                 AS low_price,
+        HIGH                AS interday_high_price,
+        LOW                 AS interday_low_price,
         CLOSE               AS close_price,
         ADJUSTED_CLOSE      AS adjusted_close_price,
-        VOLUME              AS volume,
+        VOLUME              AS trading_volume,
         DIVIDEND_AMOUNT     AS dividend_amount,
         SPLIT_COEFFICIENT   AS split_coefficient,
-        TICKER              AS ticker,
+        TICKER              AS stock_ticker,
         LOAD_TIME
     FROM {{ source('stock_data','stock_price_data_raw') }}
 
@@ -34,12 +34,17 @@ filtered AS (
         ON r.load_time = m.max_load_time
 )
 
-SELECT *
-FROM filtered
-
 {% if is_incremental() %}
-QUALIFY trading_date > (
-    SELECT COALESCE(MAX(trading_date), '1900-01-01')
-    FROM {{ this }}
+, incremental_filtered AS (
+    SELECT *
+    FROM filtered
+    WHERE trading_date > (
+        SELECT COALESCE(MAX(trading_date), '1900-01-01')
+        FROM {{ this }}
+    )
 )
 {% endif %}
+
+SELECT *
+FROM {% if is_incremental() %} incremental_filtered {% else %} filtered {% endif %}
+

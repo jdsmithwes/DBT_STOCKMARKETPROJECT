@@ -1,30 +1,32 @@
 version: 2
 
 models:
-  - name: int_stock_returns
-    description: "Intermediate table calculating returns"
+  - name: int_price_momentum
+    description: "Stock-level daily return and momentum statistics."
 
     columns:
-      - name: ticker
+      - name: stock_ticker
         tests:
           - not_null
 
-      - name: trading_date
-        tests:
-          - not_null
-
-      - name: daily_return
+      - name: avg_daily_return
         tests:
           - dbt_utils.accepted_range:
               arguments:
                 min_value: -1
                 max_value: 1
 
-  - name: int_sector_summary
-    description: "Aggregates company-level data to sector level."
+      - name: daily_volatility
+        tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+
+  - name: int_sectors
+    description: "Aggregates company-level data to industry level."
 
     columns:
-      - name: sector
+      - name: INDUSTRY
         tests:
           - not_null
 

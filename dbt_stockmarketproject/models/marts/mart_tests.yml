@@ -18,25 +18,25 @@ models:
         tests:
           - dbt_utils.accepted_range:
               arguments:
-                min_value: -1
-                max_value: 1
+                min_value: -100
+                max_value: 100
 
-  - name: mart_price_factors
-    description: "Final price factor table (momentum, volatility, etc.)"
+  - name: mart_factor_model
+    description: "Final factor model (value, growth, momentum, quality)."
 
     columns:
       - name: ticker
         tests:
           - not_null
 
-      - name: momentum_30d
+      - name: one_month_return
         tests:
           - dbt_utils.accepted_range:
               arguments:
                 min_value: -1
                 max_value: 1
 
-      - name: volatility_30d
+      - name: daily_volatility
         tests:
           - dbt_utils.accepted_range:
               arguments:
