@@ -29,12 +29,17 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
 ALPHAVANTAGE_API_KEY = os.getenv("ALPHAVANTAGE_API_KEY")
+SNS_TOPIC_ARN = os.getenv("SNS_TOPIC_ARN")  # <-- MUST BE SET IN EC2 ENV VARS
 
 if not ALPHAVANTAGE_API_KEY:
     raise ValueError("Missing ALPHAVANTAGE_API_KEY environment variable.")
 
+if not SNS_TOPIC_ARN:
+    raise ValueError("Missing SNS_TOPIC_ARN environment variable.")
+
+
 # ------------------------------------
-# S3 Client
+# AWS Clients
 # ------------------------------------
 s3_client = boto3.client(
     "s3",
@@ -43,12 +48,43 @@ s3_client = boto3.client(
     region_name=AWS_REGION,
 )
 
+sns_client = boto3.client("sns", region_name=AWS_REGION)
+
+
+# ------------------------------------
+# SNS Notification Functions
+# ------------------------------------
+def notify_success(message="EC2 Stock API job completed successfully."):
+    try:
+        sns_client.publish(
+            TopicArn=SNS_TOPIC_ARN,
+            Subject="EC2 Job Success",
+            Message=message,
+        )
+        logging.info("📨 SNS success notification sent.")
+    except Exception as e:
+        logging.error(f"⚠️ Failed to send SNS success notification: {e}")
+
+
+def notify_failure(error_message):
+    try:
+        sns_client.publish(
+            TopicArn=SNS_TOPIC_ARN,
+            Subject="EC2 Job FAILURE",
+            Message=f"Stock API job FAILED.\n\nError:\n{error_message}",
+        )
+        logging.info("📨 SNS failure notification sent.")
+    except Exception as e:
+        logging.error(f"⚠️ Failed to send SNS failure notification: {e}")
+
+
 # ------------------------------------
 # Fetch S&P 500 Tickers
 # ------------------------------------
 def fetch_sp500_tickers():
     df = pd.read_csv("https://datahub.io/core/s-and-p-500-companies/r/constituents.csv")
     return df["Symbol"].str.upper().tolist()
+
 
 # ------------------------------------
 # Normalize AlphaVantage JSON → DataFrame
@@ -89,6 +125,7 @@ def normalize_alpha_vantage(ticker, ts):
 
     return df
 
+
 # ------------------------------------
 # Apply START_DATE Filter
 # ------------------------------------
@@ -100,6 +137,7 @@ def filter_to_start_date(df, ticker):
     )
 
     return filtered
+
 
 # ------------------------------------
 # Async full-history fetch with retry
@@ -125,19 +163,21 @@ async def fetch_full_history(session: ClientSession, ticker: str):
 
     df = normalize_alpha_vantage(ticker, ts)
 
-    # ⭐ Filter: only include rows >= START_DATE (incremental cutoff)
+    # Incremental cutoff filtering
     df = filter_to_start_date(df, ticker)
 
     return df if not df.empty else None
 
+
 # ------------------------------------
-# Rate Limiter (Premium)
+# Rate Limiting
 # ------------------------------------
 API_CALLS_PER_MINUTE = 110
 CALL_DELAY = 60 / API_CALLS_PER_MINUTE
 
+
 # ------------------------------------
-# Async Driver with Progress Logging
+# Async Ticker Fetch Loop
 # ------------------------------------
 async def fetch_all_full_history(tickers):
     timeout = ClientTimeout(total=60)
@@ -160,8 +200,9 @@ async def fetch_all_full_history(tickers):
 
     return results
 
+
 # ------------------------------------
-# S3 Upload (Partitioned)
+# S3 Upload
 # ------------------------------------
 def upload_partitioned(df, ticker):
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
@@ -175,23 +216,32 @@ def upload_partitioned(df, ticker):
 
     logging.info(f"📤 Uploaded → s3://{S3_BUCKET_NAME}/{s3_key}")
 
+
 # ------------------------------------
-# Main Workflow
+# Main Workflow with SNS Success/Failure
 # ------------------------------------
 def main():
-    logging.info("🚀 STARTING INCREMENTAL HISTORICAL INGEST (DATE-CUTOFF MODE)")
-    tickers = fetch_sp500_tickers()
-    all_data = asyncio.run(fetch_all_full_history(tickers))
+    try:
+        logging.info("🚀 STARTING INCREMENTAL HISTORICAL INGEST (DATE-CUTOFF MODE)")
 
-    if not all_data:
-        logging.warning("⚠️ No data returned.")
-        return
+        tickers = fetch_sp500_tickers()
+        all_data = asyncio.run(fetch_all_full_history(tickers))
 
-    for df in all_data:
-        ticker = df["ticker"].iloc[0]
-        upload_partitioned(df, ticker)
+        if not all_data:
+            raise Exception("No data returned from API calls.")
 
-    logging.info("🎉 COMPLETE — Incremental batches uploaded!")
+        for df in all_data:
+            ticker = df["ticker"].iloc[0]
+            upload_partitioned(df, ticker)
+
+        logging.info("🎉 COMPLETE — Incremental batches uploaded!")
+        notify_success("EC2 stock ingestion job completed successfully.")
+
+    except Exception as e:
+        logging.error(f"❌ JOB FAILED: {e}")
+        notify_failure(str(e))
+        raise  # re-raise for cron/log visibility
+
 
 # ------------------------------------
 # Run
@@ -199,4 +249,5 @@ def main():
 if __name__ == "__main__":
     main()
 
+    #trigger for git add
 
