@@ -1,6 +1,6 @@
 {{ config(
     materialized='incremental',
-    unique_key='trading_date || \'-\' || stock_ticker',
+    unique_key='trading_date || \'-\' || ticker',
     incremental_strategy='merge'
 ) }}
 
@@ -16,7 +16,7 @@ WITH raw AS (
         VOLUME              AS trading_volume,
         DIVIDEND_AMOUNT     AS dividend_amount,
         SPLIT_COEFFICIENT   AS split_coefficient,
-        TICKER              AS stock_ticker,
+        TICKER              AS ticker,
         LOAD_TIME
     FROM {{ source('stock_data','stock_price_data_raw') }}
 
