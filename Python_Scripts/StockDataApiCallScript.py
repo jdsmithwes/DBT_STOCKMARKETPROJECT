@@ -4,14 +4,14 @@ import aiohttp
 import pandas as pd
 import boto3
 import logging
-from datetime import datetime
+from datetime import datetime, date
 from aiohttp import ClientSession, ClientTimeout
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 # -----------------------------------------------------------
-# CONFIGURABLE START DATE (CONTROLS WHAT GETS LOADED)
+# TODAY-BASED FILTER (EACH RUN ONLY LOADS TODAY'S DATA)
 # -----------------------------------------------------------
-START_DATE = pd.to_datetime("2026-11-14")  # <-- YOU CONTROL YOUR PIPELINE FROM HERE
+TODAY = pd.to_datetime(date.today())
 
 # ------------------------------------
 # Logging Setup
@@ -29,14 +29,13 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
 ALPHAVANTAGE_API_KEY = os.getenv("ALPHAVANTAGE_API_KEY")
-SNS_TOPIC_ARN = os.getenv("SNS_TOPIC_ARN")  # <-- MUST BE SET IN EC2 ENV VARS
+SNS_TOPIC_ARN = os.getenv("SNS_TOPIC_ARN")
 
 if not ALPHAVANTAGE_API_KEY:
     raise ValueError("Missing ALPHAVANTAGE_API_KEY environment variable.")
 
 if not SNS_TOPIC_ARN:
     raise ValueError("Missing SNS_TOPIC_ARN environment variable.")
-
 
 # ------------------------------------
 # AWS Clients
@@ -61,9 +60,9 @@ def notify_success(message="EC2 Stock API job completed successfully."):
             Subject="EC2 Job Success",
             Message=message,
         )
-        logging.info("📨 SNS success notification sent.")
+        logging.info("SNS success notification sent.")
     except Exception as e:
-        logging.error(f"⚠️ Failed to send SNS success notification: {e}")
+        logging.error(f"Failed to send SNS success notification: {e}")
 
 
 def notify_failure(error_message):
@@ -73,9 +72,9 @@ def notify_failure(error_message):
             Subject="EC2 Job FAILURE",
             Message=f"Stock API job FAILED.\n\nError:\n{error_message}",
         )
-        logging.info("📨 SNS failure notification sent.")
+        logging.info("SNS failure notification sent.")
     except Exception as e:
-        logging.error(f"⚠️ Failed to send SNS failure notification: {e}")
+        logging.error(f"Failed to send SNS failure notification: {e}")
 
 
 # ------------------------------------
@@ -127,13 +126,13 @@ def normalize_alpha_vantage(ticker, ts):
 
 
 # ------------------------------------
-# Apply START_DATE Filter
+# Keep ONLY rows for today
 # ------------------------------------
-def filter_to_start_date(df, ticker):
-    filtered = df[df["date"] >= START_DATE]
+def filter_to_today(df, ticker):
+    filtered = df[df["date"] == TODAY]
 
     logging.info(
-        f"⏳ {ticker}: Filtered {df.shape[0]} → {filtered.shape[0]} rows after {START_DATE.date()}"
+        f"{ticker}: Retained {filtered.shape[0]} rows for today's date ({TODAY.date()})."
     )
 
     return filtered
@@ -158,13 +157,13 @@ async def fetch_full_history(session: ClientSession, ticker: str):
 
     ts = data.get("Time Series (Daily)")
     if ts is None:
-        logging.warning(f"⚠️ {ticker}: No time series returned.")
+        logging.warning(f"{ticker}: No Time Series returned.")
         return None
 
     df = normalize_alpha_vantage(ticker, ts)
 
-    # Incremental cutoff filtering
-    df = filter_to_start_date(df, ticker)
+    # Keep only today's rows
+    df = filter_to_today(df, ticker)
 
     return df if not df.empty else None
 
@@ -187,14 +186,13 @@ async def fetch_all_full_history(tickers):
     async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
         for i, ticker in enumerate(tickers, start=1):
 
-            logging.info(f"⏳ [{i}/{len(tickers)}] Fetching {ticker}…")
+            logging.info(f"[{i}/{len(tickers)}] Fetching {ticker}…")
 
             df = await fetch_full_history(session, ticker)
             if df is not None:
                 results.append(df)
-                logging.info(f"✅ Completed {ticker}")
             else:
-                logging.warning(f"❌ No rows retained for {ticker}")
+                logging.warning(f"{ticker}: No rows for today.")
 
             await asyncio.sleep(CALL_DELAY)
 
@@ -214,40 +212,33 @@ def upload_partitioned(df, ticker):
     s3_key = f"{s3_prefix}{filename}"
     s3_client.upload_file(local_path, S3_BUCKET_NAME, s3_key)
 
-    logging.info(f"📤 Uploaded → s3://{S3_BUCKET_NAME}/{s3_key}")
+    logging.info(f"Uploaded → s3://{S3_BUCKET_NAME}/{s3_key}")
 
 
 # ------------------------------------
-# Main Workflow with SNS Success/Failure
+# Main Workflow
 # ------------------------------------
 def main():
     try:
-        logging.info("🚀 STARTING INCREMENTAL HISTORICAL INGEST (DATE-CUTOFF MODE)")
+        logging.info("🚀 STARTING TODAY-ONLY STOCK INGEST")
 
         tickers = fetch_sp500_tickers()
         all_data = asyncio.run(fetch_all_full_history(tickers))
 
         if not all_data:
-            raise Exception("No data returned from API calls.")
+            raise Exception("No data returned for any tickers today.")
 
         for df in all_data:
             ticker = df["ticker"].iloc[0]
             upload_partitioned(df, ticker)
 
-        logging.info("🎉 COMPLETE — Incremental batches uploaded!")
-        notify_success("EC2 stock ingestion job completed successfully.")
+        notify_success("EC2 daily stock ingestion completed successfully.")
 
     except Exception as e:
-        logging.error(f"❌ JOB FAILED: {e}")
+        logging.error(f"JOB FAILED: {e}")
         notify_failure(str(e))
-        raise  # re-raise for cron/log visibility
+        raise
 
 
-# ------------------------------------
-# Run
-# ------------------------------------
 if __name__ == "__main__":
     main()
-
-    #trigger for git add
-

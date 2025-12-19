@@ -10,14 +10,14 @@ models:
           arguments:
             field: trading_date
             datepart: day
-            interval: 30   # <-- updated
+            interval: 90   # <-- updated
 
     columns:
       - name: trading_date
         tests:
           - not_null
 
-      - name: stock_ticker
+      - name: ticker
         tests:
           - not_null
 
