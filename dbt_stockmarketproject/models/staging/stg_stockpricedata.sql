@@ -1,6 +1,6 @@
 {{
     config(
-        materialized='incremental',
+        materialized = 'incremental',
         unique_key = ['TICKER', 'TRADING_DATE']
     )
 }}
@@ -8,28 +8,34 @@
 with raw as (
 
     select
-        r.TICKER                                   as TICKER,
-        r.DATE::date                              as TRADING_DATE,
+        r.TICKER                                           as TICKER,
+
+        -- explicit date casting (prevents dbt compile-time string math)
+        to_date(r.DATE)                                    as TRADING_DATE,
 
         -- canonical price fields
-        r.OPEN::float                             as OPEN_PRICE,
-        r.HIGH::float                             as HIGH_PRICE,
-        r.LOW::float                              as LOW_PRICE,
-        r.CLOSE::float                            as CLOSE_PRICE,
-        r.ADJUSTED_CLOSE::float                   as ADJUSTED_CLOSE_PRICE,
+        to_double(r.OPEN)                                  as OPEN_PRICE,
+        to_double(r.HIGH)                                  as HIGH_PRICE,
+        to_double(r.LOW)                                   as LOW_PRICE,
+        to_double(r.CLOSE)                                 as CLOSE_PRICE,
+        to_double(r.ADJUSTED_CLOSE)                         as ADJUSTED_CLOSE_PRICE,
 
-        r.VOLUME::number                          as VOLUME,
-        r.DIVIDEND_AMOUNT::float                  as DIVIDEND_AMOUNT,
-        r.SPLIT_COEFFICIENT::float                as SPLIT_COEFFICIENT,
+        to_number(r.VOLUME)                                as VOLUME,
+        to_double(r.DIVIDEND_AMOUNT)                        as DIVIDEND_AMOUNT,
+        to_double(r.SPLIT_COEFFICIENT)                      as SPLIT_COEFFICIENT,
 
-        r.LOAD_TIME                               as LOAD_TIME
+        -- explicit timestamp casting
+        to_timestamp_ntz(r.LOAD_TIME)                      as LOAD_TIME
 
     from {{ source('stock_data', 'stock_price_data_raw') }} r
 
     {% if is_incremental() %}
-        where r.LOAD_TIME >
+        where to_timestamp_ntz(r.LOAD_TIME) >
             (
-                select coalesce(max(t.LOAD_TIME), '1900-01-01'::timestamp_ntz)
+                select coalesce(
+                    max(t.LOAD_TIME),
+                    to_timestamp_ntz('1900-01-01')
+                )
                 from {{ this }} t
             )
     {% endif %}
