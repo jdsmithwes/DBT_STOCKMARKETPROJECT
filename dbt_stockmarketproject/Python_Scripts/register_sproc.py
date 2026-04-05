@@ -69,7 +69,7 @@ EXTERNAL_ACCESS_INTEGRATION = "ALPHAVANTAGE_ACCESS_INTEGRATION"
 # Set to True to also create a daily Snowflake Task
 CREATE_TASK         = True
 TASK_NAME           = "STOCK_SPROC_DAILY_TASK"
-TASK_SCHEDULE       = "USING CRON 0 18 * * MON-FRI America/New_York"  # 6 PM ET weekdays
+TASK_SCHEDULE       = "USING CRON 0 20 * * * America/New_York"  # 8 PM ET daily
 
 # ---------------------------------------------------------------------------
 # SCRIPT PATH

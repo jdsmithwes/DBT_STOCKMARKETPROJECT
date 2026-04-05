@@ -58,8 +58,8 @@ SPROC_NAME = "COMPANY_INFO_SPROC"
 
 # Task: run every Monday at 8 AM ET (company fundamentals refresh weekly)
 CREATE_TASK   = True
-TASK_NAME     = "COMPANY_INFO_WEEKLY_TASK"
-TASK_SCHEDULE = "USING CRON 0 8 * * MON America/New_York"
+TASK_NAME     = "COMPANY_INFO_DAILY_TASK"
+TASK_SCHEDULE = "USING CRON 0 20 * * * America/New_York"  # 8 PM ET daily
 
 # ---------------------------------------------------------------------------
 # SCRIPT PATH
