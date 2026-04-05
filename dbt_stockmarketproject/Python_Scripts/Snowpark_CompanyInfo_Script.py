@@ -285,15 +285,18 @@ def _fetch_all_overviews(tickers: list[str], api_key: str) -> pd.DataFrame:
 def _upsert_to_snowflake(
     session: Session,
     df: pd.DataFrame,
-    qualified_table: str,
+    database: str,
+    schema: str,
+    table: str,
 ) -> int:
     """MERGE df into the target table, keyed on `symbol` (ticker).
 
     Creates the table on first run if it doesn't exist.
     Returns the number of rows processed.
     """
-    # Write to a temp table then MERGE into target
-    tmp_table = f"{qualified_table}_TMP_LOAD"
+    # Quoted fully-qualified names — temp table gets its own valid identifier
+    qualified_table = f'"{database}"."{schema}"."{table}"'
+    tmp_table       = f'"{database}"."{schema}"."{table}_TMP_LOAD"'
 
     sdf = session.create_dataframe(df)
 
@@ -306,8 +309,8 @@ def _upsert_to_snowflake(
     update_clause = ", ".join(
         f'target."{c}" = source."{c}"' for c in non_key_cols
     )
-    insert_cols   = ", ".join(f'"{c}"' for c in df.columns)
-    insert_vals   = ", ".join(f'source."{c}"' for c in df.columns)
+    insert_cols = ", ".join(f'"{c}"' for c in df.columns)
+    insert_vals = ", ".join(f'source."{c}"' for c in df.columns)
 
     merge_sql = f"""
         MERGE INTO {qualified_table} AS target
@@ -386,7 +389,7 @@ def run_as_sproc(session: Session) -> str:
         return msg
 
     # ---- Upsert ----
-    rows_processed = _upsert_to_snowflake(session, df, qualified_table)
+    rows_processed = _upsert_to_snowflake(session, df, database, schema, table)
 
     msg = f"Upserted {rows_processed} company overview rows into {qualified_table}"
     logging.info(msg)

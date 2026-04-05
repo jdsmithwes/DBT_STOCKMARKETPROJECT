@@ -145,7 +145,7 @@ def register_sproc(session: Session) -> None:
     print("  Upload complete.")
 
     print(f"Registering stored procedure {SPROC_NAME}…")
-    secret_ref = f"{TARGET_DATABASE}.{TARGET_SCHEMA}.ALPHAVANTAGE_SECRET"
+    secret_ref = f"{SNOWFLAKE_DATABASE}.DBT_DEV_JDS_STAGING.ALPHAVANTAGE_SECRET"
     ddl = f"""
         CREATE OR REPLACE PROCEDURE {SNOWFLAKE_DATABASE}.{SNOWFLAKE_SCHEMA}.{SPROC_NAME}(
             start_date VARCHAR DEFAULT NULL,

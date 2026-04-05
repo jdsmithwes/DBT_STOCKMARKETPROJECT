@@ -204,8 +204,8 @@ def _parse_date_arg(value: Optional[str], name: str) -> Optional[date]:
 def _get_target_table_info() -> tuple[str, str, str]:
     """Read destination table coordinates from env vars, with hardcoded fallbacks."""
     database = os.getenv("TARGET_DATABASE", "DBT_STOCKPROJECT")
-    schema   = os.getenv("TARGET_SCHEMA",   "DBT_DEV_JDS_STAGING")
-    table    = os.getenv("TARGET_TABLE",    "STG_STOCKPRICE")
+    schema   = os.getenv("TARGET_SCHEMA",   "PUBLIC")
+    table    = os.getenv("TARGET_TABLE",    "RAW_STOCK_DATA")
     return database, schema, table
 
 
