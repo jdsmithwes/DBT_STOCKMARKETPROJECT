@@ -9,6 +9,15 @@ from datetime import datetime
 from aiohttp import ClientSession, ClientTimeout
 from tenacity import retry, stop_after_attempt, wait_fixed
 
+try:
+    from dotenv import load_dotenv
+except ModuleNotFoundError:
+    load_dotenv = None
+
+# Load environment variables from .env file
+if load_dotenv:
+    load_dotenv()
+
 # -----------------------------------------------------------
 # Logging Setup
 # -----------------------------------------------------------
