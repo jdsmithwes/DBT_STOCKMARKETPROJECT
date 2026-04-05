@@ -64,23 +64,77 @@ import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timedelta
-from typing import Optional, TYPE_CHECKING
+from typing import Optional
 
 import pandas as pd
 import requests
 
-if TYPE_CHECKING:
-    from snowflake.snowpark import Session  # pragma: no cover
+# Session is always available inside the Snowflake runtime.
+# The try/except lets the file be imported locally for testing without error.
+try:
+    from snowflake.snowpark import Session
+except ImportError:  # pragma: no cover
+    Session = object  # type: ignore
 
 # ---------------------------------------------------------------------------
 # CONSTANTS
 # ---------------------------------------------------------------------------
 FALLBACK_START_DATE: date = date(2020, 1, 1)
-FALLBACK_TICKER: str = "AAPL"
 ALPHAVANTAGE_BASE_URL: str = "https://www.alphavantage.co/query"
-MAX_WORKERS: int = 5          # parallel API calls
+MAX_WORKERS: int = 8          # parallel API calls
 MAX_RETRIES: int = 3          # per-ticker retry attempts
-RETRY_WAIT_SECONDS: int = 2   # wait between retries
+RETRY_WAIT_SECONDS: int = 15  # wait between retries on 429 / rate-limit note
+# AlphaVantage rate limit: 25 req/min on free tier, 75/min on premium.
+# We stay under by releasing a token every (60 / RATE_LIMIT_PER_MIN) seconds.
+RATE_LIMIT_PER_MIN: int = 25  # increase to 75 if you have a premium key
+
+# ---------------------------------------------------------------------------
+# S&P 500 TICKER LIST  (as of early 2026 — update periodically)
+# ---------------------------------------------------------------------------
+SP500_TICKERS: list[str] = [
+    "MMM","AOS","ABT","ABBV","ACN","ADBE","AMD","AES","AFL","A","APD","ABNB",
+    "AKAM","ALB","ARE","ALGN","ALLE","LNT","ALL","GOOGL","GOOG","MO","AMZN",
+    "AMCR","AEE","AAL","AEP","AXP","AIG","AMT","AWK","AMP","AME","AMGN","APH",
+    "ADI","ANSS","AON","APA","AAPL","AMAT","APTV","ACGL","ADM","ANET","AJG",
+    "AIZ","T","ATO","ADSK","ADP","AZO","AVB","AVY","AXON","BKR","BALL","BAC",
+    "BK","BBWI","BAX","BDX","WRB","BBY","BIO","TECH","BIIB","BLK","BX","BA",
+    "BCH","BSX","BMY","AVGO","BR","BRO","BF.B","BLDR","BG","CDNS","CZR","CPT",
+    "CPB","COF","CAH","KMX","CCL","CARR","CTLT","CAT","CBOE","CBRE","CDW","CE",
+    "COR","CNC","CNX","CDAY","CF","CRL","SCHW","CHTR","CVX","CMG","CB","CHD",
+    "CI","CINF","CTAS","CSCO","C","CFG","CLX","CME","CMS","KO","CTSH","CL",
+    "CMCSA","CMA","CAG","COP","ED","STZ","CEG","COO","CPRT","GLW","CTVA","CSGP",
+    "COST","CTRA","CCI","CSX","CMI","CVS","DHI","DHR","DRI","DVA","DAY","DE",
+    "DAL","XRAY","DVN","DXCM","FANG","DLR","DFS","DG","DLTR","D","DPZ","DOV",
+    "DOW","DHC","DTE","DUK","DD","EMN","ETN","EBAY","ECL","EIX","EW","EA","ELV",
+    "LLY","EMR","ENPH","ETR","EOG","EPAM","EQT","EFX","EQIX","EQR","ESS","EL",
+    "ETSY","EG","EVRG","ES","EXC","EXPE","EXPD","EXR","XOM","FFIV","FDS","FICO",
+    "FAST","FRT","FDX","FIS","FITB","FSLR","FE","FI","FLT","FMC","F","FTNT",
+    "FTV","FOXA","FOX","BEN","FCX","GRMN","IT","GE","GEHC","GEV","GEN","GNRC",
+    "GD","GIS","GM","GPC","GILD","GPN","GL","GDDY","GS","HAL","HIG","HAS","HCA",
+    "DOC","HSIC","HSY","HES","HPE","HLT","HOLX","HD","HON","HRL","HST","HWM",
+    "HPQ","HUBB","HUM","HBAN","HII","IBM","IEX","IDXX","ITW","INCY","IR","PODD",
+    "INTC","ICE","IFF","IP","IPG","INTU","ISRG","IVZ","INVH","IQV","IRM","JBAL",
+    "JKHY","J","JBL","JNPR","JPM","JNPR","K","KVUE","KDP","KEY","KEYS","KMB",
+    "KIM","KMI","KLAC","KHC","KR","LHX","LH","LRCX","LW","LVS","LDOS","LEN",
+    "LIN","LYV","LKQ","LMT","L","LOW","LULU","LYB","MTB","MRO","MPC","MKTX",
+    "MAR","MMC","MLM","MAS","MA","MTCH","MKC","MCD","MCK","MDT","MRK","META",
+    "MET","MTD","MGM","MCHP","MU","MSFT","MAA","MRNA","MHK","MOH","TAP","MDLZ",
+    "MPWR","MNST","MCO","MS","MOS","MSI","MSCI","NDAQ","NTAP","NOV","NFLX","NWL",
+    "NEM","NWSA","NWS","NEE","NKE","NI","NDSN","NSC","NTRS","NOC","NCLH","NRG",
+    "NUE","NVDA","NVR","NXPI","ORLY","OXY","ODFL","OMC","ON","OKE","ORCL","OTIS",
+    "PCAR","PKG","PANW","PH","PAYX","PAYC","PYPL","PNR","PEP","PFE","PCG","PM",
+    "PSX","PNW","PXD","PNC","POOL","PPG","PPL","PFG","PG","PGR","PLD","PRU","PEG",
+    "PTC","PSA","PHM","QRVO","PWR","QCOM","DGX","RL","RJF","RTX","O","REG","REGN",
+    "RF","RSG","RMD","RVTY","ROK","ROL","ROP","ROST","RCL","SPGI","CRM","SBAC",
+    "SLB","STX","SRE","NOW","SHW","SPG","SWKS","SJM","SW","SNA","SOLV","SO",
+    "LUV","SWK","SBUX","STT","STLD","STE","SYK","SMCI","SYF","SNPS","SYY","TMUS",
+    "TROW","TTWO","TPR","TRGP","TGT","TEL","TDY","TFX","TER","TSLA","TXN","TMO",
+    "TJX","TSCO","TT","TDG","TRV","TRMB","TFC","TYL","TSN","USB","UBER","UDR",
+    "ULTA","UNP","UAL","UPS","URI","UNH","UHS","VLO","VTR","VLTO","VRSN","VRSK",
+    "VZ","VRTX","VTRS","VICI","V","VMC","WRK","WAB","WBA","WMT","DIS","WBD",
+    "WM","WAT","WEC","WFC","WELL","WST","WDC","WHR","WMB","WTW","GWW","WYNN",
+    "XEL","XYL","YUM","ZBRA","ZBH","ZTS",
+]
 
 logging.basicConfig(
     level=logging.INFO,
@@ -148,21 +202,15 @@ def _parse_date_arg(value: Optional[str], name: str) -> Optional[date]:
 # SNOWFLAKE TABLE HELPERS
 # ---------------------------------------------------------------------------
 def _get_target_table_info() -> tuple[str, str, str]:
-    """Read and validate destination table coordinates from env vars."""
-    database = os.getenv("TARGET_DATABASE")
-    schema = os.getenv("TARGET_SCHEMA")
-    table = os.getenv("TARGET_TABLE")
-
-    if not database or not schema or not table:
-        raise EnvironmentError(
-            "TARGET_DATABASE, TARGET_SCHEMA, and TARGET_TABLE "
-            "must all be set as environment variables on the stored procedure."
-        )
+    """Read destination table coordinates from env vars, with hardcoded fallbacks."""
+    database = os.getenv("TARGET_DATABASE", "DBT_STOCKPROJECT")
+    schema   = os.getenv("TARGET_SCHEMA",   "DBT_DEV_STAGING")
+    table    = os.getenv("TARGET_TABLE",    "STG_STOCKPRICE")
     return database, schema, table
 
 
 def _get_last_loaded_date(
-    session: "Session", qualified: str
+    session: Session, qualified: str
 ) -> date:
     """Return the highest date in the target table, or FALLBACK_START_DATE."""
     try:
@@ -185,7 +233,7 @@ def _get_last_loaded_date(
 
 
 def _get_tickers_from_table(
-    session: "Session", qualified: str
+    session: Session, qualified: str
 ) -> list[str]:
     """Return distinct tickers already in the target table."""
     try:
@@ -198,8 +246,8 @@ def _get_tickers_from_table(
             return tickers
     except Exception as exc:
         logging.warning("Could not read tickers from table: %s", exc)
-    logging.warning("No tickers found in table — using fallback: %s", FALLBACK_TICKER)
-    return [FALLBACK_TICKER]
+    logging.warning("No tickers in table — falling back to full S&P 500 list (%d tickers)", len(SP500_TICKERS))
+    return list(SP500_TICKERS)
 
 
 # ---------------------------------------------------------------------------
@@ -281,25 +329,63 @@ def _fetch_all_tickers(
     end_date: date,
     api_key: str,
 ) -> pd.DataFrame:
-    """Fetch multiple tickers in parallel using a thread pool.
+    """Fetch all tickers in parallel with a rate-limit throttle.
+
+    Dispatches up to MAX_WORKERS threads but gates each call through a
+    semaphore that releases at RATE_LIMIT_PER_MIN tokens/minute so we
+    never exceed the AlphaVantage API limit.
 
     Returns a concatenated DataFrame of all successful results.
     """
+    import threading
+
+    interval = 60.0 / RATE_LIMIT_PER_MIN          # seconds between permits
+    semaphore = threading.Semaphore(0)             # starts locked
+    stop_event = threading.Event()
+    total = len(tickers)
+
+    def _permit_dispatcher():
+        """Release one permit every `interval` seconds until done."""
+        released = 0
+        while not stop_event.is_set() and released < total:
+            semaphore.release()
+            released += 1
+            if released < total:
+                time.sleep(interval)
+
+    dispatcher = threading.Thread(target=_permit_dispatcher, daemon=True)
+    dispatcher.start()
+
+    def _throttled_fetch(ticker: str) -> pd.DataFrame:
+        semaphore.acquire()
+        return _fetch_ticker(ticker, start_date, end_date, api_key)
+
     frames: list[pd.DataFrame] = []
+    failed: list[str] = []
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = {
-            executor.submit(_fetch_ticker, ticker, start_date, end_date, api_key): ticker
+            executor.submit(_throttled_fetch, ticker): ticker
             for ticker in tickers
         }
+        done = 0
         for future in as_completed(futures):
             ticker = futures[future]
+            done += 1
             try:
                 df = future.result()
                 if not df.empty:
                     frames.append(df)
             except Exception as exc:
                 logging.error("Unhandled error fetching %s: %s", ticker, exc)
+                failed.append(ticker)
+            if done % 50 == 0 or done == total:
+                logging.info("Progress: %d / %d tickers fetched", done, total)
+
+    stop_event.set()
+
+    if failed:
+        logging.warning("%d ticker(s) failed entirely: %s", len(failed), failed[:20])
 
     if not frames:
         return pd.DataFrame()
@@ -311,7 +397,7 @@ def _fetch_all_tickers(
 # STORED PROCEDURE HANDLER
 # ---------------------------------------------------------------------------
 def run_as_sproc(
-    session: "Session",
+    session: Session,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
 ) -> str:
@@ -332,11 +418,19 @@ def run_as_sproc(
         A summary message logged as the procedure's return value.
     """
     # ---- Configuration ----
-    api_key = os.getenv("ALPHAVANTAGE_API_KEY")
+    # Read the AlphaVantage key from a Snowflake secret (preferred) and fall
+    # back to an environment variable so the script still works locally.
+    try:
+        import _snowflake  # only available inside the Snowflake runtime
+        api_key = _snowflake.get_generic_secret_string('alphavantage_secret')
+    except ImportError:
+        api_key = os.getenv("ALPHAVANTAGE_API_KEY")
+
     if not api_key:
         raise EnvironmentError(
-            "ALPHAVANTAGE_API_KEY must be set as an environment variable "
-            "on the stored procedure."
+            "AlphaVantage API key not found. Inside Snowflake, create a "
+            "generic secret named 'alphavantage_api_key' and grant the "
+            "procedure access to it. Locally, set ALPHAVANTAGE_API_KEY."
         )
 
     database, schema, table = _get_target_table_info()
@@ -389,12 +483,16 @@ def run_as_sproc(
     logging.info("Fetching %s to %s", resolved_start, resolved_end)
 
     # ---- Tickers ----
+    # Priority: TICKERS env var → S&P 500 list (default)
+    # The table-lookup path is kept as a last resort but the S&P 500 list
+    # is always the baseline so a fresh table still gets all 500 tickers.
     tickers_env = os.getenv("TICKERS")
     if tickers_env:
         tickers = [t.strip() for t in tickers_env.split(",") if t.strip()]
         logging.info("Using %d tickers from TICKERS env var", len(tickers))
     else:
-        tickers = _get_tickers_from_table(session, qualified_table)
+        tickers = list(SP500_TICKERS)
+        logging.info("Using full S&P 500 ticker list (%d tickers)", len(tickers))
 
     # ---- Fetch from AlphaVantage ----
     final_df = _fetch_all_tickers(tickers, resolved_start, resolved_end, api_key)
